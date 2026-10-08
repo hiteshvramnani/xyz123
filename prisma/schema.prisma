@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  SCREENSHOT
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(USER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  submissions  Submission[]
+  threads      Thread[]
+
+  @@map("users")
+  @@index([username])
+}
+
+model Trail {
+  id          String   @id @default(uuid())
+  slug        String   @unique @map("slug_text")
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  tags        String[] @default([])
+
+  createdBy   String   @map("created_by_token")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  submissions Submission[]
+
+  @@map("trails")
+  @@index([slug])
+  @@index([tags])
+}
+
+model Submission {
+  id          String   @id @default(uuid())
+  trailId     String   @map("trail_id")
+
+  what        String   @db.Text
+  whereField  String   @map("where_field") @db.Text
+  whenField   DateTime @map("when_field")
+
+  timeWindowStart DateTime? @map("time_window_start")
+  timeWindowEnd   DateTime? @map("time_window_end")
+
+  sourceChain   String? @map("source_chain") @db.Text
+  timeLag       Int?    @map("time_lag_minutes")
+  locationContext String? @map("location_context") @db.Text
+
+  userId        String?  @map("user_id")
+  reporterToken String?  @map("reporter_token") @db.VarChar(64)
+
+  metadata      Json?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trail   Trail         @relation(fields: [trailId], references: [id], onDelete: Cascade)
+  user    User?          @relation(fields: [userId], references: [id])
+  media   Media[]
+  threads Thread[]
+
+  @@map("submissions")
+  @@index([trailId])
+  @@index([userId])
+  @@index([reporterToken])
+  @@index([whenField])
+  @@index([createdAt])
+}
+
+model Media {
+  id            String     @id @default(uuid())
+  submissionId  String     @map("submission_id")
+  mediaType     MediaType
+  s3Key         String     @map("s3_key") @db.VarChar(500)
+  mimeType      String     @map("mime_type") @db.VarChar(100)
+  fileSizeBytes BigInt     @map("file_size_bytes")
+  thumbnailS3Key String?   @map("thumbnail_s3_key") @db.VarChar(500)
+  caption       String?    @db.Text
+  partIndex     Int        @default(0)
+  uploadedAt    DateTime   @default(now())
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("media")
+  @@index([submissionId])
+  @@index([mediaType])
+}
+
+model Thread {
+  id            String   @id @default(uuid())
+  submissionId  String   @map("submission_id")
+
+  content       String   @db.Text
+  locationText  String?  @map("location_text") @db.Text
+
+  metadata      Json?
+
+  userId        String?  @map("user_id")
+  reporterToken String?  @map("reporter_token") @db.VarChar(64)
+
+  createdAt     DateTime @default(now())
+
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  submission    Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("threads")
+  @@index([submissionId])
+  @@index([userId])
+  @@index([reporterToken])
+  @@index([createdAt])
+}

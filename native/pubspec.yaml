@@ -1,0 +1,35 @@
+name: native_app
+description: "Evidence submission app for data collection."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+  geolocator: ^10.1.0
+  image_picker: ^1.0.7
+  uuid: ^4.3.3
+  mime: ^1.0.4
+  cached_network_image: ^3.3.0
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+  url_launcher: ^6.3.0
+  device_info_plus: ^10.0.0
+  video_player: ^2.8.7
+  chewie: ^1.8.1
+  local_auth: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
