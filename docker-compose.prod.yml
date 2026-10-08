@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: portal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: data_collection
+      POSTGRES_USER: dc_user
+      POSTGRES_PASSWORD: dc_password_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dc_user -d data_collection"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - portal
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: portal-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password_dev
+    volumes:
+      - minio_data:/data
+    networks:
+      - portal
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    container_name: portal-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minio_admin minio_password_dev &&
+      mc mb --ignore-existing local/data-collection-media &&
+      exit 0
+      "
+    networks:
+      - portal
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: portal-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_VERSION: v1
+      DATABASE_URL: postgresql://dc_user:dc_password_dev@postgres:5432/data_collection
+      JWT_SECRET: change-me-to-a-long-random-secret
+      JWT_EXPIRY: 24h
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: minio_admin
+      S3_SECRET_KEY: minio_password_dev
+      S3_BUCKET: data-collection-media
+      S3_FORCE_PATH_STYLE: "true"
+      MEDIA_MAX_IMAGE: 10485760
+      MEDIA_MAX_VIDEO: 524288000
+      MEDIA_MAX_AUDIO: 52428800
+      MEDIA_MAX_DOCUMENT: 26214400
+      MEDIA_MAX_SCREENSHOT: 10485760
+      DEFAULT_PAGE_LIMIT: 20
+      MAX_PAGE_LIMIT: 100
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - portal
+
+  caddy:
+    image: caddy:2
+    container_name: portal-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    networks:
+      - portal
+
+volumes:
+  postgres_data:
+  minio_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  portal:
