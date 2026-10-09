@@ -82,6 +82,8 @@ model Submission {
   threads Thread[]
 
   @@map("submissions")
+  @@index([what])
+  @@index([whereField])
   @@index([trailId])
   @@index([userId])
   @@index([reporterToken])

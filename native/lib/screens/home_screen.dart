@@ -4,6 +4,7 @@ import '../services/storage_service.dart';
 import '../main.dart' as app;
 import '../widgets/date_formatter.dart';
 import 'submission_detail.dart';
+import 'submit_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -414,6 +415,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _navigateToSubmit() {
     Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SubmitScreen()),
+    );
   }
 
   void _navigateToDetail(String id) {
