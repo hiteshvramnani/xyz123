@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:native_app/models/submission.dart';
 import '../services/storage_service.dart';
 import '../main.dart' as app;
@@ -17,6 +18,13 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Submission> _submissions = [];
   String? _error;
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _totalPages = 1;
+
+  // Pagination - max 5 submissions per page
+  static const int _pageSize = 5;
+  int _currentPage = 0;
 
   // Search
   final TextEditingController _searchCtrl = TextEditingController();
@@ -50,10 +58,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSubmissions() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
     try {
       final browserId = await StorageService.getBrowserId();
-      final result = await app.apiService.listMySubmissions(
+      final result = await app.apiService.listMySubmissionsWithPagination(
         browserId,
         q: _search,
         hasImage: _hasImage,
@@ -61,15 +73,25 @@ class _HomeScreenState extends State<HomeScreen> {
         hasPhoneNumber: _hasPhoneNumber,
         hasLocation: _hasLocation,
         hasTitle: _hasTitle,
+        page: _currentPage + 1,
+        limit: _pageSize,
       );
-      final rawList = (result['data'] as List<dynamic>?) ?? [];
+
+      final resultData = result['data'] as Map<String, dynamic>;
+      final rawList = (resultData['submissions'] as List<dynamic>?) ?? [];
+      final pag = result['pagination'] as Map<String, dynamic>?;
+      final totalPages = (pag?['totalPages'] as num?)?.toInt() ?? 1;
+
       setState(() {
         _submissions = rawList
             .map((json) => Submission.fromJson(json as Map<String, dynamic>))
             .toList();
+        _hasMore = rawList.length == _pageSize;
+        _totalPages = totalPages < 1 ? 1 : totalPages;
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('LOAD ERROR: $e\n$st');
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
         _loading = false;
@@ -77,9 +99,35 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _goToPage(int page) {
+    if (_loading || page < 0 || page >= _totalPages || page == _currentPage) {
+      return;
+    }
+    setState(() => _currentPage = page);
+    _loadSubmissions();
+  }
+
+    Future<void> _reload() {
+    setState(() {
+      _currentPage = 0;
+      _hasMore = true;
+      _submissions.clear();
+    });
+    return _loadSubmissions();
+  }
+
   void _applySearch(String value) {
     setState(() {
       _search = value;
+      _hasImage = false;
+      _hasVideo = false;
+      _hasPhoneNumber = false;
+      _hasLocation = false;
+      _hasTitle = false;
+      _currentPage = 0;
+      _submissions.clear();
+      _error = null;
+      _loadingMore = false;
     });
     _loadSubmissions();
   }
@@ -93,6 +141,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _hasPhoneNumber = false;
       _hasLocation = false;
       _hasTitle = false;
+      _currentPage = 0;
+      _submissions.clear();
+      _error = null;
+      _loadingMore = false;
     });
     _loadSubmissions();
   }
@@ -153,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      _loadSubmissions();
+                      _reload();
                     },
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     child: const Text('Apply', style: TextStyle(fontSize: 14)),
@@ -164,6 +216,22 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _navigateToSubmit() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SubmitScreen()),
+    );
+  }
+
+  void _navigateToDetail(String id) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SubmissionDetailScreen(submissionId: id),
       ),
     );
   }
@@ -182,7 +250,10 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.menu),
             onPressed: () => app.showMenu(
               context,
-              onNavigateNew: () => Navigator.pop(context),
+              onNavigateNew: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubmitScreen()),
+              ),
               onNavigateSubmissions: () {},
               onLock: app.logout,
             ),
@@ -210,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       isDense: true,
                     ),
-                    onSubmitted: _applySearch,
+                    onSubmitted: (value) => _applySearch(value),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -252,6 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: _buildPagination(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToSubmit(),
         icon: const Icon(Icons.add),
@@ -266,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
       chips.add(Padding(
         padding: const EdgeInsets.only(right: 6),
         child: Chip(
-          label: Text('"$_search"', style: const TextStyle(fontSize: 11)),
+          label: Text('$_search', style: const TextStyle(fontSize: 11)),
           backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
           visualDensity: VisualDensity.compact,
         ),
@@ -325,6 +397,66 @@ class _HomeScreenState extends State<HomeScreen> {
     return chips;
   }
 
+    Widget? _buildPagination() {
+    if (_totalPages <= 1) return null;
+
+    // Show a window of up to 5 page numbers around the current page
+    var start = _currentPage - 2;
+    if (start < 0) start = 0;
+    var end = start + 4;
+    if (end > _totalPages - 1) {
+      end = _totalPages - 1;
+      start = end - 4;
+      if (start < 0) start = 0;
+    }
+
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: const BoxDecoration(
+          color: Color(0xFF111827),
+          border: Border(top: BorderSide(color: Color(0xFF1F2937))),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Previous',
+              onPressed: (_currentPage > 0 && !_loading)
+                  ? () => _goToPage(_currentPage - 1)
+                  : null,
+            ),
+            for (var i = start; i <= end; i++)
+              SizedBox(
+                width: 38,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(38, 38),
+                    backgroundColor:
+                        i == _currentPage ? const Color(0xFF2563EB) : null,
+                    foregroundColor: i == _currentPage
+                        ? Colors.white
+                        : const Color(0xFF9CA3AF),
+                  ),
+                  onPressed: _loading ? null : () => _goToPage(i),
+                  child: Text('${i + 1}'),
+                ),
+              ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Next',
+              onPressed: (_currentPage < _totalPages - 1 && !_loading)
+                  ? () => _goToPage(_currentPage + 1)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildError() {
     return Center(
       child: Padding(
@@ -371,9 +503,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildList() {
     return RefreshIndicator(
-      onRefresh: _loadSubmissions,
+      onRefresh: _reload,
       child: ListView.separated(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
         itemCount: _submissions.length,
         separatorBuilder: (_, _) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
@@ -411,17 +543,5 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
-  }
-
-  void _navigateToSubmit() {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SubmitScreen()),
-    );
-  }
-
-  void _navigateToDetail(String id) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => SubmissionDetailScreen(submissionId: id)));
   }
 }

@@ -150,6 +150,72 @@ class ApiService {
     return _request('/api/v1/evidence/my-submissions?$queryString');
   }
 
+  // Pagination-aware version that wraps the data
+  Future<Map<String, dynamic>> listMySubmissionsWithPagination(
+    String browserId, {
+    String? q,
+    bool? hasImage,
+    bool? hasVideo,
+    bool? hasPhoneNumber,
+    bool? hasLocation,
+    bool? hasTitle,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final params = <String, dynamic>{'browserId': browserId, 'page': page, 'limit': limit};
+    if (q != null) params['q'] = q;
+    if (hasImage != null) params['hasImage'] = hasImage.toString();
+    if (hasVideo != null) params['hasVideo'] = hasVideo.toString();
+    if (hasPhoneNumber != null) params['hasPhoneNumber'] = hasPhoneNumber.toString();
+    if (hasLocation != null) params['hasLocation'] = hasLocation.toString();
+    if (hasTitle != null) params['hasTitle'] = hasTitle.toString();
+    final queryString = params.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}').join('&');
+    final result = await _request('/api/v1/evidence/my-submissions?$queryString');
+
+    final data = result['data'];
+    List<dynamic> submissions = [];
+    int totalItems = 0;
+
+    if (data is List) {
+      submissions = data;
+    } else if (data is Map && data['submissions'] is List) {
+      submissions = data['submissions'] as List<dynamic>;
+      totalItems = (data['totalItems'] as num?)?.toInt() ?? 0;
+    }
+
+    final pag = result['pagination'];
+    if (pag is Map) {
+      totalItems = (pag['totalItems'] as num?)?.toInt() ??
+          (pag['total'] as num?)?.toInt() ??
+          totalItems;
+    }
+    if (totalItems == 0) totalItems = submissions.length;
+
+    final pageSize = limit > 0 ? limit : 20;
+    
+    // Fallback: if the server ignored `limit` and sent everything,
+    // paginate on the client instead.
+    if (submissions.length > pageSize) {
+      totalItems = submissions.length;
+      final safePage = page < 1 ? 1 : page;
+      final start = (safePage - 1) * pageSize;
+      submissions = submissions.skip(start).take(pageSize).toList();
+    }
+
+    return {
+      'data': {
+        'submissions': submissions,
+        'totalItems': totalItems,
+      },
+      'pagination': {
+        'currentPage': page,
+        'totalItems': totalItems,
+        'totalPages': (totalItems / pageSize).ceil(),
+        'pageSize': pageSize,
+      },
+    };
+  }
+
   Future<Map<String, dynamic>> getSubmission(String id) {
     return _request('/api/v1/submissions/$id');
   }
