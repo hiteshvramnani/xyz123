@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../main.dart'; // Imports the global variables without naming collisions
+import '../theme/theme.dart';
+import '../widgets/ui/ui.dart';
 
 typedef ActivityCallback = void Function();
 
@@ -160,109 +162,98 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildLockScreen() {
+    final c = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A0A0F), Color(0xFF111827)],
+            colors: [c.background, c.surface],
           ),
         ),
         child: SafeArea(
           child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(
-                      Icons.cloud_upload_outlined,
-                      size: 40,
-                      color: Color(0xFF60A5FA),
-                    ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    borderRadius: AppRadii.brLg,
+                    border: Border.all(color: c.outline),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Data Collection Platform',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFE5E7EB),
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: c.primarySubtle,
+                          borderRadius: AppRadii.brMd,
+                        ),
+                        child: Icon(
+                          Icons.lock_outline,
+                          size: 26,
+                          color: c.accent,
+                        ),
+                      ),
+                      AppSpacing.gapLg,
+                      Text(
+                        'Data Collection Platform',
+                        style: textTheme.titleLarge,
+                      ),
+                      AppSpacing.gapXs,
+                      Text(
+                        'Unlock to continue to your workspace.',
+                        style: textTheme.bodyMedium,
+                      ),
+                      AppSpacing.gapLg,
+                      Divider(height: 1, color: c.outline),
+                      AppSpacing.gapLg,
+                      if (_error != null) ...[
+                        StatusBanner(message: _error!),
+                        AppSpacing.gapLg,
+                        PrimaryButton(
+                          label: 'Try again',
+                          icon: Icons.fingerprint,
+                          onPressed: _authenticate,
+                        ),
+                      ] else if (_cancelled) ...[
+                        Text(
+                          'Your session is locked.',
+                          style: textTheme.bodyMedium,
+                        ),
+                        AppSpacing.gapLg,
+                        PrimaryButton(
+                          label: 'Unlock',
+                          icon: Icons.fingerprint,
+                          onPressed: _authenticate,
+                        ),
+                      ] else
+                        Row(
+                          children: [
+                            const SizedBox(
+                              height: AppIconSize.md,
+                              width: AppIconSize.md,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            AppSpacing.gapHMd,
+                            Text(
+                              'Authenticating…',
+                              style: textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 48),
-                  if (_error != null) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7F1D1D).withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFB91C1C).withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(
-                          color: Color(0xFFFCA5A5),
-                          fontSize: 13,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _authenticate,
-                        icon: const Icon(Icons.fingerprint, size: 20),
-                        label: const Text('Try Again'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          textStyle: const TextStyle(fontSize: 15),
-                        ),
-                      ),
-                    ),
-                  ] else if (_cancelled) ...[
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Re-authenticate when ready.',
-                      style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _authenticate,
-                        icon: const Icon(Icons.fingerprint, size: 20),
-                        label: const Text('Authenticate'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          textStyle: const TextStyle(fontSize: 15),
-                        ),
-                      ),
-                    ),
-                  ] else
-                    const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFF2563EB),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
           ),

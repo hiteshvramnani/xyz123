@@ -6,6 +6,9 @@ import 'package:mime/mime.dart';
 import '../services/storage_service.dart';
 import '../services/geolocation_service.dart';
 import '../main.dart' as app;
+import '../theme/theme.dart';
+import '../widgets/date_formatter.dart';
+import '../widgets/ui/ui.dart';
 import '../widgets/map_picker.dart';
 import 'uploading_screen.dart';
 import 'home_screen.dart';
@@ -83,88 +86,40 @@ class _SubmitScreenState extends State<SubmitScreen> {
   }
 
   void _showPhotoSourcePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF111827),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF9CA3AF)),
-              title: const Text(
-                'Take Photo',
-                style: TextStyle(color: Color(0xFFE5E7EB)),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickPhotos(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.photo_library,
-                color: Color(0xFF9CA3AF),
-              ),
-              title: const Text(
-                'Choose from Gallery',
-                style: TextStyle(color: Color(0xFFE5E7EB)),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickPhotos(ImageSource.gallery);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+    showAppOptionsSheet(
+      context,
+      title: 'Add photo',
+      options: [
+        AppSheetOption(
+          icon: Icons.camera_alt_outlined,
+          label: 'Take Photo',
+          onTap: () => _pickPhotos(ImageSource.camera),
         ),
-      ),
+        AppSheetOption(
+          icon: Icons.photo_library_outlined,
+          label: 'Choose from Gallery',
+          onTap: () => _pickPhotos(ImageSource.gallery),
+        ),
+      ],
     );
   }
 
   void _showVideoSourcePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF111827),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.videocam, color: Color(0xFF9CA3AF)),
-              title: const Text(
-                'Record Video',
-                style: TextStyle(color: Color(0xFFE5E7EB)),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickVideos(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.video_library,
-                color: Color(0xFF9CA3AF),
-              ),
-              title: const Text(
-                'Choose from Gallery',
-                style: TextStyle(color: Color(0xFFE5E7EB)),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickVideos(ImageSource.gallery);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+    showAppOptionsSheet(
+      context,
+      title: 'Add video',
+      options: [
+        AppSheetOption(
+          icon: Icons.videocam_outlined,
+          label: 'Record Video',
+          onTap: () => _pickVideos(ImageSource.camera),
         ),
-      ),
+        AppSheetOption(
+          icon: Icons.video_library_outlined,
+          label: 'Choose from Gallery',
+          onTap: () => _pickVideos(ImageSource.gallery),
+        ),
+      ],
     );
   }
 
@@ -175,13 +130,11 @@ class _SubmitScreenState extends State<SubmitScreen> {
       MaterialPageRoute(builder: (_) => const MapPickerScreen()),
     );
     if (result != null) {
+      final coord =
+          '${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}';
       setState(() {
-        _locationNames.add(
-          '${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}',
-        );
-        _locationCoords.add(
-          '${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}',
-        );
+        _locationNames.add(coord);
+        _locationCoords.add(coord);
       });
     }
   }
@@ -261,228 +214,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
     }
   }
 
-  Widget _buildFileCard(int idx, XFile file) {
-    final isImage =
-        file.mimeType?.startsWith('image/') == true ||
-        lookupMimeType(file.path)?.startsWith('image/') == true;
-    return Card(
-      key: ValueKey(file.path),
-      margin: const EdgeInsets.only(bottom: 6),
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: Color(0xFF1F2937)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-        leading: Icon(
-          isImage ? Icons.image : Icons.videocam,
-          color: isImage ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-        ),
-        title: Text(
-          file.name,
-          style: const TextStyle(fontSize: 13, color: Color(0xFFE5E7EB)),
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: FutureBuilder<int>(
-          future: file.length(),
-          builder: (_, snap) => Text(
-            formatFileSize(snap.data ?? 0),
-            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
-          ),
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.close, size: 18, color: Color(0xFF6B7280)),
-          onPressed: () => setState(() => _files.removeAt(idx)),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPhoneSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_phoneNumbers.isNotEmpty) ...[
-          ..._phoneNumbers.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final phone = entry.value;
-            return Container(
-              key: ValueKey(phone),
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1F2937).withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: const Color(0xFF374151).withValues(alpha: 0.4),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.phone, size: 16, color: Color(0xFF60A5FA)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      phone,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFFD1D5DB),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Color(0xFF6B7280),
-                    ),
-                    onPressed: () =>
-                        setState(() => _phoneNumbers.removeAt(idx)),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-        if (_showPhoneInput) ...[
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 7,
-                child: TextField(
-                  controller: _phoneInputCtrl,
-                  focusNode: _phoneInputFocus,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Phone Number'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 3,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final text = _phoneInputCtrl.text.trim();
-                      if (text.isNotEmpty) {
-                        setState(() {
-                          _phoneNumbers.add(text);
-                          _phoneInputCtrl.clear();
-                          _showPhoneInput = false;
-                        });
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 8,
-                      ),
-                    ),
-                    child: const Text('Add', style: TextStyle(fontSize: 12)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          TextButton(
-            onPressed: () => setState(() {
-              _phoneInputCtrl.clear();
-              _showPhoneInput = false;
-            }),
-            child: const Text('Cancel'),
-          ),
-        ],
-        if (!_showPhoneInput) ...[
-          if (_phoneNumbers.isNotEmpty) const SizedBox(height: 4),
-          TextButton.icon(
-            onPressed: () => setState(() => _showPhoneInput = true),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Phone Number'),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildLocationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_locationCoords.isNotEmpty) ...[
-          ..._locationCoords.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final coords = entry.value;
-            final name = _locationNames[idx];
-            return Container(
-              key: ValueKey(coords),
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1F2937).withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: const Color(0xFF374151).withValues(alpha: 0.4),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: Color(0xFF22C55E),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFD1D5DB),
-                          ),
-                        ),
-                        Text(
-                          coords,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Color(0xFF6B7280),
-                    ),
-                    onPressed: () => setState(() {
-                      _locationNames.removeAt(idx);
-                      _locationCoords.removeAt(idx);
-                    }),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-        TextButton.icon(
-          onPressed: _openMapPicker,
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Add Location'),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -491,6 +222,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.menu),
+            tooltip: 'Menu',
             onPressed: () => app.showMenu(
               context,
               onNavigateSubmissions: () => Navigator.push(
@@ -503,127 +235,215 @@ class _SubmitScreenState extends State<SubmitScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.screen,
         children: [
-          const Text(
-            'Title',
-            style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
-          ),
-          const SizedBox(height: 8),
-          TextField(
+          AppTextField(
+            label: 'Title',
+            hintText: 'Brief description',
             controller: _titleCtrl,
             focusNode: _titleFocus,
             maxLines: 3,
-            decoration: const InputDecoration(hintText: 'Brief Description'),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Attach Media',
-            style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
-          ),
-          const SizedBox(height: 8),
+          AppSpacing.gapXl,
+          const SectionLabel('Attach Media'),
+          AppSpacing.gapSm,
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _showPhotoSourcePicker,
-                  icon: const Icon(Icons.photo_outlined),
+                  icon: const Icon(Icons.photo_outlined, size: AppIconSize.md),
                   label: const Text('Photos'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Color(0xFF374151)),
-                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.gapHMd,
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _showVideoSourcePicker,
-                  icon: const Icon(Icons.videocam_outlined),
+                  icon: const Icon(Icons.videocam_outlined, size: AppIconSize.md),
                   label: const Text('Videos'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Color(0xFF374151)),
-                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
           if (_files.isNotEmpty) ...[
+            AppSpacing.gapMd,
             Text(
               'Selected files (${_files.length})',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 4),
+            AppSpacing.gapSm,
             ...List.generate(
               _files.length,
               (i) => _buildFileCard(i, _files[i]),
             ),
-            const SizedBox(height: 16),
           ],
+          AppSpacing.gapXl,
+          const SectionLabel('Phone Numbers'),
+          AppSpacing.gapSm,
           _buildPhoneSection(),
-          const SizedBox(height: 4),
+          AppSpacing.gapLg,
+          const SectionLabel('Locations'),
+          AppSpacing.gapSm,
           _buildLocationSection(),
-          const SizedBox(height: 8),
           if (_error != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7F1D1D).withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: const Color(0xFFB91C1C).withValues(alpha: 0.4),
-                ),
-              ),
-              child: Text(
-                _error!,
-                style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 12),
+            AppSpacing.gapLg,
+            StatusBanner(message: _error!),
           ],
+          AppSpacing.gapXl,
           ListenableBuilder(
             listenable: _titleCtrl,
             builder: (context, child) {
-              return SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitting || !_hasContent ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  child: _submitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text(
-                          'Submit',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                ),
+              return PrimaryButton(
+                label: 'Submit',
+                loading: _submitting,
+                onPressed: _hasContent ? _submit : null,
               );
             },
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLg,
         ],
       ),
     );
   }
-}
 
-String formatFileSize(int bytes) {
-  if (bytes <= 0) return "0 B";
-  if (bytes < 1024) return "$bytes B";
-  if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
-  return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
+  Widget _buildFileCard(int idx, XFile file) {
+    final c = context.colors;
+    final isImage =
+        file.mimeType?.startsWith('image/') == true ||
+        lookupMimeType(file.path)?.startsWith('image/') == true;
+    return Padding(
+      key: ValueKey(file.path),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Card(
+        child: ListTile(
+          contentPadding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.xs,
+          ),
+          leading: Icon(
+            isImage ? Icons.image_outlined : Icons.videocam_outlined,
+            color: isImage ? c.accent : c.textSecondary,
+          ),
+          title: Text(
+            file.name,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: c.textPrimary,
+                ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: FutureBuilder<int>(
+            future: file.length(),
+            builder: (_, snap) => Text(
+              formatFileSize(snap.data ?? 0),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          trailing: IconButton(
+            tooltip: 'Remove file',
+            icon: Icon(Icons.close, size: AppIconSize.md, color: c.textTertiary),
+            onPressed: () => setState(() => _files.removeAt(idx)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhoneSection() {
+    final c = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ..._phoneNumbers.asMap().entries.map(
+              (entry) => RemovableEntryTile(
+                key: ValueKey(entry.value),
+                icon: Icons.phone_outlined,
+                iconColor: c.accent,
+                title: entry.value,
+                removeTooltip: 'Remove phone number',
+                onRemove: () => setState(() => _phoneNumbers.removeAt(entry.key)),
+              ),
+            ),
+        if (_showPhoneInput) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _phoneInputCtrl,
+                  focusNode: _phoneInputFocus,
+                  keyboardType: TextInputType.phone,
+                  autofocus: true,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(hintText: 'Phone number'),
+                  onSubmitted: (_) => _commitPhone(),
+                ),
+              ),
+              AppSpacing.gapHSm,
+              ElevatedButton(
+                onPressed: _commitPhone,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, AppSizes.buttonHeight),
+                ),
+                child: const Text('Add'),
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => setState(() {
+                _phoneInputCtrl.clear();
+                _showPhoneInput = false;
+              }),
+              child: const Text('Cancel'),
+            ),
+          ),
+        ] else
+          AddEntryButton(
+            label: 'Add Phone Number',
+            onPressed: () => setState(() => _showPhoneInput = true),
+          ),
+      ],
+    );
+  }
+
+  void _commitPhone() {
+    final text = _phoneInputCtrl.text.trim();
+    if (text.isNotEmpty) {
+      setState(() {
+        _phoneNumbers.add(text);
+        _phoneInputCtrl.clear();
+        _showPhoneInput = false;
+      });
+    }
+  }
+
+  Widget _buildLocationSection() {
+    final c = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ..._locationCoords.asMap().entries.map(
+              (entry) => RemovableEntryTile(
+                key: ValueKey(entry.value),
+                icon: Icons.location_on_outlined,
+                iconColor: c.accent,
+                title: _locationNames[entry.key],
+                removeTooltip: 'Remove location',
+                onRemove: () => setState(() {
+                  _locationNames.removeAt(entry.key);
+                  _locationCoords.removeAt(entry.key);
+                }),
+              ),
+            ),
+        AddEntryButton(
+          label: 'Add Location',
+          onPressed: _openMapPicker,
+        ),
+      ],
+    );
+  }
 }

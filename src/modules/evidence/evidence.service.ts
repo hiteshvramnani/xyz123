@@ -169,6 +169,22 @@ export async function listMySubmissions(browserId: string, query?: { q?: string;
     wheres.push(`(s."what" IS NOT NULL AND s."what" != '')`);
   }
 
+    // 1. Get the total matching count for pagination boundaries
+  const countSql = `
+    SELECT COUNT(*)::int as total FROM "submissions" s
+    WHERE ${wheres.join(' AND ')}
+  `;
+  const countResults = await prisma.$queryRawUnsafe<{ total: number }[]>(countSql, ...binds);
+  const total = Number(countResults?.[0]?.total ?? 0);
+
+  // 2. Clone the binds array to dynamically separate list tokens from count tokens
+  const queryBinds = [...binds];
+
+  // 3. Increment parameter tokens based on the current idx track location
+  const limitIdx = idx;
+  const offsetIdx = idx + 1;
+  queryBinds.push(limit, (page - 1) * limit);
+
   const sql = `
     SELECT s.id, s."what", s."where_field" as "whereField", s."when_field" as "whenField",
            s."createdAt", s."updatedAt", s."metadata",
@@ -177,19 +193,13 @@ export async function listMySubmissions(browserId: string, query?: { q?: string;
     FROM "submissions" s
     WHERE ${wheres.join(' AND ')}
     ORDER BY s."createdAt" DESC
-    LIMIT $${idx} OFFSET $${idx + 1}
+    LIMIT $${limitIdx} OFFSET $${offsetIdx}
   `;
-  binds.push(limit, (page - 1) * limit);
 
-  // Count total for pagination
-  const countSql = `
-    SELECT COUNT(*) as total FROM "submissions" s
-    WHERE ${wheres.join(' AND ')}
-  `;
-  const countResults = await prisma.$queryRawUnsafe<{ total: number }[]>(countSql, ...binds);
-  const total = Number(countResults[0]?.total ?? 0);
+  // 4. Execute the targeted selection using the custom boundary parameter block
+  const results = await prisma.$queryRawUnsafe<any[]>(sql, ...queryBinds);
 
-  const results = await prisma.$queryRawUnsafe<any[]>(sql, ...binds);
+
 
   console.log('[listMySubmissions] found', results.length, 'of', total, 'submissions (page', page, ')');
 

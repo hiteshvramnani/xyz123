@@ -3,7 +3,9 @@ import 'package:native_app/models/submission.dart';
 
 import '../services/storage_service.dart';
 import '../main.dart' as app;
+import '../theme/theme.dart';
 import '../widgets/date_formatter.dart';
+import '../widgets/ui/ui.dart';
 import 'submission_detail.dart';
 import 'submit_screen.dart';
 
@@ -18,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Submission> _submissions = [];
   String? _error;
   bool _loading = true;
-  bool _hasMore = true;
   int _totalPages = 1;
 
   static const int _pageSize = 5;
@@ -82,7 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _submissions = rawList
             .map((json) => Submission.fromJson(json as Map<String, dynamic>))
             .toList();
-        _hasMore = rawList.length == _pageSize;
         _totalPages = totalPages < 1 ? 1 : totalPages;
         _loading = false;
       });
@@ -106,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _reload() {
     setState(() {
       _currentPage = 0;
-      _hasMore = true;
       _submissions.clear();
     });
     return _loadSubmissions();
@@ -144,133 +143,60 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showFilterSortSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF111827),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+    showAppSheet<void>(
+      context,
+      child: StatefulBuilder(
+        builder: (context, setModalState) {
+          Widget filterSwitch(
+            String label,
+            IconData icon,
+            bool value,
+            ValueChanged<bool> onChanged,
+          ) {
+            return SwitchListTile(
+              value: value,
+              secondary: Icon(icon, size: AppIconSize.md),
+              title: Text(label,
+                  style: Theme.of(context).textTheme.bodyLarge),
+              contentPadding: EdgeInsets.zero,
+              onChanged: (v) {
+                setModalState(() => onChanged(v));
+                setState(() {});
+              },
+            );
+          }
+
+          return SingleChildScrollView(
+            padding: AppSpacing.screen,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Filter by Content',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  value: _hasTitle,
-                  secondary: const Icon(
-                    Icons.title,
-                    size: 20,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                  title: const Text(
-                    'Has Title',
-                    style: TextStyle(color: Color(0xFFE5E7EB)),
-                  ),
-                  activeThumbColor: const Color(0xFF2563EB),
-                  onChanged: (v) {
-                    setModalState(() => _hasTitle = v);
-                    setState(() {});
+                Text('Filter by content',
+                    style: Theme.of(context).textTheme.titleMedium),
+                AppSpacing.gapSm,
+                filterSwitch('Has title', Icons.title, _hasTitle,
+                    (v) => _hasTitle = v),
+                filterSwitch('Has photo', Icons.image_outlined, _hasImage,
+                    (v) => _hasImage = v),
+                filterSwitch('Has video', Icons.videocam_outlined, _hasVideo,
+                    (v) => _hasVideo = v),
+                filterSwitch('Has phone number', Icons.phone_outlined,
+                    _hasPhoneNumber, (v) => _hasPhoneNumber = v),
+                filterSwitch('Has location', Icons.location_on_outlined,
+                    _hasLocation, (v) => _hasLocation = v),
+                AppSpacing.gapMd,
+                PrimaryButton(
+                  label: 'Apply',
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _reload();
                   },
                 ),
-                SwitchListTile(
-                  value: _hasImage,
-                  secondary: const Icon(
-                    Icons.image,
-                    size: 20,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                  title: const Text(
-                    'Has Photo',
-                    style: TextStyle(color: Color(0xFFE5E7EB)),
-                  ),
-                  activeThumbColor: const Color(0xFF2563EB),
-                  onChanged: (v) {
-                    setModalState(() => _hasImage = v);
-                    setState(() {});
-                  },
-                ),
-                SwitchListTile(
-                  value: _hasVideo,
-                  secondary: const Icon(
-                    Icons.videocam,
-                    size: 20,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                  title: const Text(
-                    'Has Video',
-                    style: TextStyle(color: Color(0xFFE5E7EB)),
-                  ),
-                  activeThumbColor: const Color(0xFF2563EB),
-                  onChanged: (v) {
-                    setModalState(() => _hasVideo = v);
-                    setState(() {});
-                  },
-                ),
-                SwitchListTile(
-                  value: _hasPhoneNumber,
-                  secondary: const Icon(
-                    Icons.phone,
-                    size: 20,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                  title: const Text(
-                    'Has Phone Number',
-                    style: TextStyle(color: Color(0xFFE5E7EB)),
-                  ),
-                  activeThumbColor: const Color(0xFF2563EB),
-                  onChanged: (v) {
-                    setModalState(() => _hasPhoneNumber = v);
-                    setState(() {});
-                  },
-                ),
-                SwitchListTile(
-                  value: _hasLocation,
-                  secondary: const Icon(
-                    Icons.location_on,
-                    size: 20,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                  title: const Text(
-                    'Has Location',
-                    style: TextStyle(color: Color(0xFFE5E7EB)),
-                  ),
-                  activeThumbColor: const Color(0xFF2563EB),
-                  onChanged: (v) {
-                    setModalState(() => _hasLocation = v);
-                    setState(() {});
-                  },
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _reload();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text('Apply', style: TextStyle(fontSize: 14)),
-                  ),
-                ),
-                const SizedBox(height: 8),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -291,7 +217,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // FIX: Implements uniform callback checks to clear history stack elements cleanly
   void _handleBackNavigation() {
     if (Navigator.of(context).canPop()) {
       Navigator.pop(context);
@@ -310,11 +235,13 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Data Log'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: _handleBackNavigation, // Changed cleanly here
+          tooltip: 'Back',
+          onPressed: _handleBackNavigation,
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.menu),
+            tooltip: 'Menu',
             onPressed: () => app.showMenu(
               context,
               onNavigateNew: () => Navigator.push(
@@ -330,91 +257,112 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _searchCtrl,
+                    textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Search packs...',
-                      prefixIcon: const Icon(Icons.search, size: 20),
+                      hintText: 'Search submissions',
+                      prefixIcon:
+                          const Icon(Icons.search, size: AppIconSize.md),
                       suffixIcon: _search.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, size: 20),
+                              icon: const Icon(Icons.clear,
+                                  size: AppIconSize.md),
+                              tooltip: 'Clear search',
                               onPressed: () => _applySearch(''),
                             )
                           : null,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      isDense: true,
                     ),
-                    onSubmitted: (value) => _applySearch(value),
+                    onSubmitted: _applySearch,
                   ),
                 ),
-                const SizedBox(width: 8),
+                AppSpacing.gapHSm,
                 IconButton(
                   icon: Icon(
                     Icons.filter_list,
                     color: _hasFilters
-                        ? const Color(0xFF2563EB)
-                        : const Color(0xFF9CA3AF),
-                    size: 22,
+                        ? context.colors.primary
+                        : context.colors.textSecondary,
                   ),
+                  tooltip: 'Filter',
                   onPressed: _showFilterSortSheet,
                 ),
               ],
             ),
           ),
           if (_hasFilters)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  ..._buildFilterChips(),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: _clearFilters,
-                    child: const Text('Clear', style: TextStyle(fontSize: 12)),
-                  ),
-                ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    ..._buildFilterChips(),
+                    TextButton(
+                      onPressed: _clearFilters,
+                      child: const Text('Clear'),
+                    ),
+                  ],
+                ),
               ),
             ),
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Color(0xFF2563EB)),
-                    ),
-                  )
+                ? const LoadingView()
                 : _error != null
-                ? _buildError()
-                : _submissions.isEmpty
-                ? _buildEmpty()
-                : _buildList(),
+                    ? _buildError()
+                    : _submissions.isEmpty
+                        ? _buildEmpty()
+                        : _buildList(),
           ),
         ],
       ),
       bottomNavigationBar: _buildPagination(),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToSubmit(),
+        onPressed: _navigateToSubmit,
         icon: const Icon(Icons.add),
         label: const Text('New Submission'),
-        backgroundColor: const Color(0xFF2563EB),
       ),
     );
   }
 
   List<Widget> _buildFilterChips() {
+    final c = context.colors;
     final chips = <Widget>[];
 
-    Chip chip(String label) => Chip(
-      label: Text(label, style: const TextStyle(fontSize: 11)),
-      backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-      visualDensity: VisualDensity.compact,
-    );
+    Widget chip(String label) => Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 5,
+          ),
+          decoration: BoxDecoration(
+            color: c.primarySubtle,
+            borderRadius: AppRadii.brSm,
+            border: Border.all(color: c.primary.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: c.accent, letterSpacing: 0),
+          ),
+        );
 
     if (_search.isNotEmpty) chips.add(chip(_search));
     if (_hasImage) chips.add(chip('Photo'));
@@ -423,13 +371,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_hasLocation) chips.add(chip('Location'));
     if (_hasTitle) chips.add(chip('Title'));
 
-    return chips
-        .map((c) => Padding(padding: const EdgeInsets.only(right: 6), child: c))
-        .toList();
+    return chips;
   }
 
   Widget? _buildPagination() {
     if (_totalPages <= 1) return null;
+    final c = context.colors;
 
     var start = _currentPage - 2;
     if (start < 0) start = 0;
@@ -442,40 +389,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: const BoxDecoration(
-          color: Color(0xFF111827),
-          border: Border(top: BorderSide(color: Color(0xFF1F2937))),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: c.surface,
+          border: Border(top: BorderSide(color: c.outline)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
               icon: const Icon(Icons.chevron_left),
+              tooltip: 'Previous page',
               onPressed: (_currentPage > 0 && !_loading)
                   ? () => _goToPage(_currentPage - 1)
                   : null,
             ),
             for (var i = start; i <= end; i++)
-              SizedBox(
-                width: 38,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(38, 38),
-                    backgroundColor: i == _currentPage
-                        ? const Color(0xFF2563EB)
-                        : null,
-                    foregroundColor: i == _currentPage
-                        ? Colors.white
-                        : const Color(0xFF9CA3AF),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(40, 40),
+                      backgroundColor:
+                          i == _currentPage ? c.primary : Colors.transparent,
+                      foregroundColor:
+                          i == _currentPage ? c.onPrimary : c.textSecondary,
+                    ),
+                    onPressed: _loading ? null : () => _goToPage(i),
+                    child: Text('${i + 1}'),
                   ),
-                  onPressed: _loading ? null : () => _goToPage(i),
-                  child: Text('${i + 1}'),
                 ),
               ),
             IconButton(
               icon: const Icon(Icons.chevron_right),
+              tooltip: 'Next page',
               onPressed: (_currentPage < _totalPages - 1 && !_loading)
                   ? () => _goToPage(_currentPage + 1)
                   : null,
@@ -489,29 +443,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildError() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: AppSpacing.screen,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFDC2626).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: const Color(0xFFDC2626).withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                _error!,
-                style: const TextStyle(color: Color(0xFFFCA5A5)),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
+            StatusBanner(message: _error!),
+            AppSpacing.gapLg,
+            OutlinedButton.icon(
               onPressed: _loadSubmissions,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, size: AppIconSize.md),
               label: const Text('Retry'),
             ),
           ],
@@ -521,78 +461,77 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.cloud_upload_outlined,
-            size: 48,
-            color: Color(0xFF6B7280),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _hasFilters ? 'No matching submissions' : 'No submissions yet',
-            style: const TextStyle(color: Color(0xFF6B7280)),
-          ),
-        ],
-      ),
+    return EmptyState(
+      message: _hasFilters ? 'No matching submissions' : 'No submissions yet',
+      detail: _hasFilters
+          ? 'Try adjusting or clearing your filters.'
+          : 'Tap “New Submission” to create your first one.',
     );
   }
 
   Widget _buildList() {
+    final c = context.colors;
     return RefreshIndicator(
       onRefresh: _reload,
-      color: const Color(0xFF2563EB),
       child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+        padding: const EdgeInsets.only(bottom: 88),
         itemCount: _submissions.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (_, __) => Divider(height: 1, color: c.outline),
         itemBuilder: (context, index) {
           final s = _submissions[index];
-          return Card(
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(color: Color(0xFF1F2937)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 4,
+          final hasTitle = s.what?.isNotEmpty == true;
+          return InkWell(
+            onTap: () => _navigateToDetail(s.id),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
               ),
-              title: Text(
-                s.what?.isNotEmpty == true ? s.what! : '[No title]',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Color(0xFFE5E7EB)),
-              ),
-              subtitle: Text(
-                formatDate(s.createdAt),
-                style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
                 children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          hasTitle ? s.what! : 'Untitled submission',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: hasTitle
+                                        ? c.textPrimary
+                                        : c.textTertiary,
+                                    fontStyle: hasTitle
+                                        ? FontStyle.normal
+                                        : FontStyle.italic,
+                                  ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          formatDate(s.createdAt),
+                          style: context.mono(
+                            fontSize: 11,
+                            color: c.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (s.mediaCount > 0) ...[
-                    const Icon(
-                      Icons.attach_file,
-                      size: 16,
-                      color: Color(0xFF6B7280),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${s.mediaCount}',
-                      style: const TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 12,
-                      ),
-                    ),
+                    Icon(Icons.attach_file,
+                        size: AppIconSize.sm, color: c.textTertiary),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text('${s.mediaCount}',
+                        style: context.mono(
+                            fontSize: 12, color: c.textTertiary)),
+                    AppSpacing.gapHMd,
                   ],
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, color: Color(0xFF6B7280)),
+                  Icon(Icons.chevron_right,
+                      size: AppIconSize.md, color: c.textTertiary),
                 ],
               ),
-              onTap: () => _navigateToDetail(s.id),
             ),
           );
         },

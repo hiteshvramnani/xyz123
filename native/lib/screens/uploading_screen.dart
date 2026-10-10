@@ -3,6 +3,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 
 import '../main.dart' as app;
+import '../theme/theme.dart';
+import '../widgets/ui/ui.dart';
 import 'home_screen.dart';
 import 'submit_screen.dart';
 
@@ -79,76 +81,49 @@ class _UploadingScreenState extends State<UploadingScreen> {
 
   void _showSuccess() {
     if (!mounted) return;
+    final c = context.colors;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111827),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text(
-          'Submission Uploaded',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 20),
-        ),
+        title: const Text('Submission uploaded'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
-            const Icon(Icons.check_circle, size: 64, color: Color(0xFF22C55E)),
-            const SizedBox(height: 12),
-            const Text(
-              'Your submission has been received successfully. Thank you for contributing.',
+            AppSpacing.gapSm,
+            Icon(Icons.check_circle_outline,
+                size: AppIconSize.xl, color: c.primary),
+            AppSpacing.gapMd,
+            Text(
+              'Your submission has been received.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF9CA3AF)),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(ctx).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const SubmitScreen()),
-                    (route) => false,
-                  );
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text(
-                  'New Submission',
-                  style: TextStyle(fontSize: 14),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    (route) => false,
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFF374151)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                child: const Text(
-                  'View My Submissions',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),
+        actionsOverflowDirection: VerticalDirection.down,
+        actions: [
+          PrimaryButton(
+            label: 'New Submission',
+            icon: Icons.add,
+            onPressed: () {
+              Navigator.of(ctx).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const SubmitScreen()),
+                (route) => false,
+              );
+            },
+          ),
+          AppSpacing.gapSm,
+          SecondaryButton(
+            label: 'View My Submissions',
+            onPressed: () {
+              Navigator.of(ctx).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -159,45 +134,34 @@ class _UploadingScreenState extends State<UploadingScreen> {
       appBar: AppBar(title: const Text('Submitting')),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_error != null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7F1D1D).withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: const Color(0xFFB91C1C).withValues(alpha: 0.4),
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: _error != null
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    StatusBanner(message: _error!),
+                    AppSpacing.gapLg,
+                    SecondaryButton(
+                      label: 'Go Back',
+                      onPressed: () => Navigator.of(context).maybePop(),
                     ),
-                  ),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(
-                      color: Color(0xFFFCA5A5),
-                      fontSize: 13,
-                    ),
-                  ),
+                  ],
                 )
-              else ...[
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    AppSpacing.gapXl,
+                    Text(
+                      _progress,
+                      textAlign: TextAlign.center,
+                      style: context.mono(
+                        fontSize: 13,
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  _progress,
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ],
-          ),
         ),
       ),
     );

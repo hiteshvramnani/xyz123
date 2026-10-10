@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../theme/theme.dart';
 import '../services/location_search.dart';
 
 class MapPickerScreen extends StatefulWidget {
@@ -107,15 +108,23 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final statusBar = MediaQuery.of(context).padding.top;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final keyboardOpen = keyboardHeight > 0;
+
+    final floatShadow = [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.3),
+        blurRadius: 8,
+        offset: const Offset(0, 2),
+      ),
+    ];
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // Full screen map
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -145,11 +154,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                           height: 44,
                           child: Icon(
                             Icons.location_on,
-                            color: const Color(0xFFDC2626),
+                            color: c.danger,
                             size: 44,
                             shadows: [
                               Shadow(
-                                color: Colors.black.withValues(alpha: 0.25),
+                                color: Colors.black.withValues(alpha: 0.35),
                                 blurRadius: 6,
                                 offset: const Offset(0, 3),
                               ),
@@ -162,7 +171,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             ],
           ),
 
-          // Top controls - close button only
+          // Close button
           Positioned(
             top: 0,
             left: 0,
@@ -171,26 +180,15 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               bottom: false,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
                 ),
                 child: Row(
                   children: [
-                    GestureDetector(
+                    _MapIconButton(
+                      icon: Icons.close,
+                      tooltip: 'Close',
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
                     ),
                   ],
                 ),
@@ -201,77 +199,64 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           // Search bar + suggestions
           Positioned(
             top: statusBar + 68,
-            left: 16,
-            right: 16,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF111827),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: c.surface,
+                    borderRadius: AppRadii.brMd,
+                    border: Border.all(color: c.outline),
+                    boxShadow: floatShadow,
                   ),
                   child: TextField(
                     focusNode: _searchFocus,
                     controller: _searchCtrl,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge
+                        ?.copyWith(color: c.textPrimary),
                     decoration: InputDecoration(
+                      filled: false,
                       hintText: 'Search for a place',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 14,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        size: 20,
-                        color: Color(0xFF9CA3AF),
-                      ),
+                      prefixIcon: Icon(Icons.search,
+                          size: AppIconSize.md, color: c.textSecondary),
                       suffixIcon: _searchLoading
-                          ? const SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: Align(
-                                child: SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Color(0xFF2563EB),
-                                    ),
-                                  ),
-                                ),
+                          ? const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: SizedBox(
+                                width: AppIconSize.sm,
+                                height: AppIconSize.sm,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               ),
                             )
                           : _searchCtrl.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(
-                                Icons.clear,
-                                size: 18,
-                                color: Color(0xFF9CA3AF),
-                              ),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() => _suggestions.clear());
-                                _searchFocus.requestFocus();
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                              ? IconButton(
+                                  icon: Icon(Icons.clear,
+                                      size: AppIconSize.md,
+                                      color: c.textSecondary),
+                                  tooltip: 'Clear',
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    setState(() => _suggestions.clear());
+                                    _searchFocus.requestFocus();
+                                  },
+                                )
+                              : null,
+                      border: const OutlineInputBorder(
+                        borderRadius: AppRadii.brMd,
                         borderSide: BorderSide.none,
                       ),
-                      filled: false,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 8,
+                      enabledBorder: const OutlineInputBorder(
+                        borderRadius: AppRadii.brMd,
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderRadius: AppRadii.brMd,
+                        borderSide: BorderSide.none,
                       ),
                     ),
                     onChanged: (val) {
@@ -283,64 +268,43 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     },
                   ),
                 ),
-
-                // Suggestions dropdown - opaque GestureDetector wraps the
-                // list to block taps from reaching the map underneath
                 if (_suggestions.isNotEmpty)
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      // Absorb tap - prevents the map from receiving the tap
-                      // that would overwrite _selectedLocation
-                    },
+                    onTap: () {},
                     child: Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      child: Material(
-                        color: const Color(0xFF111827),
-                        borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(12),
-                        ),
-                        child: Container(
-                          constraints: BoxConstraints(
-                            maxHeight: MediaQuery.of(context).size.height * 0.3,
-                          ),
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                      margin: const EdgeInsets.only(top: AppSpacing.xs),
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        borderRadius: AppRadii.brMd,
+                        border: Border.all(color: c.outline),
+                        boxShadow: floatShadow,
+                      ),
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.3,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: AppRadii.brMd,
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          itemCount: _suggestions.length.clamp(0, 5),
+                          separatorBuilder: (_, __) =>
+                              Divider(height: 1, color: c.outline),
+                          itemBuilder: (_, i) {
+                            final s = _suggestions[i];
+                            return ListTile(
+                              leading: Icon(Icons.location_on_outlined,
+                                  size: AppIconSize.md, color: c.accent),
+                              title: Text(
+                                s.displayName,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            itemCount: _suggestions.length.clamp(0, 5),
-                            separatorBuilder: (_, _) => const Divider(
-                              height: 1,
-                              color: Color(0xFF1F2937),
-                            ),
-                            itemBuilder: (_, i) {
-                              final s = _suggestions[i];
-                              return ListTile(
-                                leading: const Icon(
-                                  Icons.location_on,
-                                  size: 18,
-                                  color: Color(0xFF60A5FA),
-                                ),
-                                title: Text(
-                                  s.displayName,
-                                  style: const TextStyle(
-                                    color: Color(0xFFE5E7EB),
-                                    fontSize: 13,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                onTap: () => _selectSuggestion(s),
-                              );
-                            },
-                          ),
+                              onTap: () => _selectSuggestion(s),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -349,92 +313,87 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             ),
           ),
 
-          // My Location button - hide when keyboard open
+          // My Location button
           if (!keyboardOpen)
             Positioned(
-              right: 16,
+              right: AppSpacing.lg,
               bottom: 90,
-              child: GestureDetector(
+              child: _MapIconButton(
+                icon: Icons.my_location,
+                tooltip: 'My location',
+                loading: _gettingLocation,
                 onTap: _getCurrentLocation,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF111827),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: _gettingLocation
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF2563EB),
-                              ),
-                            ),
-                          )
-                        : const Icon(
-                            Icons.my_location,
-                            size: 24,
-                            color: Color(0xFF9CA3AF),
-                          ),
-                  ),
-                ),
               ),
             ),
 
-          // Insert Location button - bottom, full width
+          // Insert Location button
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 36,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: AppSpacing.xxl,
             child: AnimatedOpacity(
               opacity: _selectedLocation != null ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _selectedLocation != null
-                      ? () => Navigator.pop(context, _selectedLocation)
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    disabledBackgroundColor: const Color(0xFF2563EB)
-                        .withValues(alpha: 0.3),
-                    disabledForegroundColor: const Color(0xFF6B7280),
-                    elevation: 4,
-                    shadowColor: Colors.black.withValues(alpha: 0.3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Insert Location',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+              duration: AppDurations.medium,
+              child: ElevatedButton(
+                onPressed: _selectedLocation != null
+                    ? () => Navigator.pop(context, _selectedLocation)
+                    : null,
+                child: const Text('Insert Location'),
               ),
             ),
           ),
 
-          // Loading spinner (only on initial load)
           if (_gettingLocation && _selectedLocation == null)
             const Center(child: CircularProgressIndicator()),
         ],
+      ),
+    );
+  }
+}
+
+/// Floating square control button used over the map (close, my-location).
+class _MapIconButton extends StatelessWidget {
+  const _MapIconButton({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+    this.loading = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? tooltip;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Material(
+      color: c.surface,
+      borderRadius: AppRadii.brMd,
+      elevation: 2,
+      child: InkWell(
+        borderRadius: AppRadii.brMd,
+        onTap: onTap,
+        child: Container(
+          width: AppSizes.minTouchTarget,
+          height: AppSizes.minTouchTarget,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: AppRadii.brMd,
+            border: Border.all(color: c.outline),
+          ),
+          child: loading
+              ? const SizedBox(
+                  width: AppIconSize.md,
+                  height: AppIconSize.md,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Tooltip(
+                  message: tooltip ?? '',
+                  child: Icon(icon, size: AppIconSize.lg, color: c.textSecondary),
+                ),
+        ),
       ),
     );
   }

@@ -4,6 +4,8 @@ import 'package:screen_protector/screen_protector.dart';
 import 'screens/auth_screen.dart';
 import 'screens/submit_screen.dart';
 import 'services/api_service.dart';
+import 'theme/theme.dart';
+import 'widgets/ui/ui.dart';
 import 'config.dart';
 
 late final ApiService apiService;
@@ -12,64 +14,36 @@ late final ApiService apiService;
 void Function() logoutHandler = () {};
 bool isSystemAuthPromptActive = false;
 
-/// Show the hamburger menu.
+/// Shows the shared overflow menu as a themed options sheet. Kept as a single
+/// entry point so the submit, log and detail screens share one menu instead of
+/// re-declaring it each time.
 void showMenu(
   BuildContext context, {
   required void Function() onNavigateSubmissions,
   required void Function() onLock,
   void Function()? onNavigateNew,
 }) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: const Color(0xFF111827),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-    ),
-    builder: (ctx) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (onNavigateNew != null)
-            ListTile(
-              leading: const Icon(
-                Icons.add_circle_outline,
-                color: Color(0xFF9CA3AF),
-              ),
-              title: const Text(
-                'New Submission',
-                style: TextStyle(color: Color(0xFFE5E7EB)),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                onNavigateNew();
-              },
-            ),
-          ListTile(
-            leading: const Icon(Icons.list, color: Color(0xFF9CA3AF)),
-            title: const Text(
-              'My Submissions',
-              style: TextStyle(color: Color(0xFFE5E7EB)),
-            ),
-            onTap: () {
-              Navigator.pop(ctx);
-              onNavigateSubmissions();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.lock_outline, color: Color(0xFFEF4444)),
-            title: const Text(
-              'Lock',
-              style: TextStyle(color: Color(0xFFEF4444)),
-            ),
-            onTap: () {
-              Navigator.pop(ctx);
-              onLock();
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
+  showAppOptionsSheet(
+    context,
+    options: [
+      if (onNavigateNew != null)
+        AppSheetOption(
+          icon: Icons.add_circle_outline,
+          label: 'New Submission',
+          onTap: onNavigateNew,
+        ),
+      AppSheetOption(
+        icon: Icons.list_alt_outlined,
+        label: 'My Submissions',
+        onTap: onNavigateSubmissions,
       ),
-    ),
+      AppSheetOption(
+        icon: Icons.lock_outline,
+        label: 'Lock',
+        onTap: onLock,
+        isDestructive: true,
+      ),
+    ],
   );
 }
 
@@ -87,7 +61,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Data Collection Platform',
       debugShowCheckedModeBanner: false,
-      theme: darkTheme,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       home: const _AppWrapper(),
     );
   }
@@ -134,48 +110,40 @@ class _AppWrapperState extends State<_AppWrapper> with WidgetsBindingObserver {
     });
   }
 
-  Widget _buildPlaceholderView() {
+  @override
+  Widget build(BuildContext context) {
+    return _isAppInBackground
+        ? const _PrivacyShield()
+        : const AuthScreen(child: _AppRoot());
+  }
+}
+
+/// Shown while the app is backgrounded to keep sensitive content out of the
+/// app switcher preview.
+class _PrivacyShield extends StatelessWidget {
+  const _PrivacyShield();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: c.background,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_outline, color: Color(0xFFEF4444), size: 40),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.lock_outline, color: c.danger, size: AppIconSize.xl),
+            AppSpacing.gapLg,
+            Text(
               'App is minimized for your security',
-              style: TextStyle(
-                color: Color(0xFF9CA3AF),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () {
-                setState(() => _isAppInBackground = false);
-              },
-              child: const Text(
-                'Tap here to resume',
-                style: TextStyle(
-                  color: Color(0xFF2563EB),
-                  fontSize: 14,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
+              style: textTheme.bodyLarge?.copyWith(color: c.textSecondary),
             ),
           ],
         ),
       ),
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _isAppInBackground
-        ? _buildPlaceholderView()
-        : const AuthScreen(child: _AppRoot());
   }
 }
 
@@ -187,61 +155,3 @@ class _AppRoot extends StatelessWidget {
     return const SubmitScreen();
   }
 }
-
-final darkTheme =
-    ThemeData.from(
-      colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF2563EB),
-        onPrimary: Colors.white,
-        surface: Color(0xFF111827),
-        onSurface: Color(0xFFE5E7EB),
-        onSurfaceVariant: Color(0xFF9CA3AF),
-        outline: Color(0xFF1F2937),
-      ),
-    ).copyWith(
-      scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF111827),
-        elevation: 0,
-        titleTextStyle: TextStyle(
-          color: Color(0xFFE5E7EB),
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-        iconTheme: IconThemeData(color: Color(0xFF9CA3AF)),
-      ),
-      cardTheme: const CardThemeData(
-        color: Color(0xFF111827),
-        elevation: 0,
-        margin: EdgeInsets.zero,
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        filled: true,
-        fillColor: Color(0xFF111827),
-        border: OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFF1F2937)),
-          borderRadius: BorderRadius.all(Radius.circular(6)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFF1F2937)),
-          borderRadius: BorderRadius.all(Radius.circular(6)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFF2563EB)),
-          borderRadius: BorderRadius.all(Radius.circular(6)),
-        ),
-        hintStyle: TextStyle(color: Color(0xFF6B7280)),
-        labelStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      ),
-      textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: Color(0xFFE5E7EB)),
-        bodyMedium: TextStyle(color: Color(0xFF9CA3AF)),
-        bodySmall: TextStyle(color: Color(0xFF6B7280)),
-        labelLarge: TextStyle(
-          color: Color(0xFFE5E7EB),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      iconTheme: const IconThemeData(color: Color(0xFF9CA3AF)),
-    );

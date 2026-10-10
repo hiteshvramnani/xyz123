@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 
+import '../theme/theme.dart';
+
 class MediaViewerScreen extends StatefulWidget {
   final String streamUrl;
   final String mediaType;
@@ -96,9 +98,9 @@ class _MediaViewerScreenState extends State<MediaViewerScreen> with WidgetsBindi
           showControlsOnInitialize: true,
           aspectRatio: _videoController!.value.aspectRatio,
           materialProgressColors: ChewieProgressColors(
-            playedColor: const Color(0xFF2563EB),
-            handleColor: const Color(0xFF60A5FA),
-            backgroundColor: const Color(0xFF374151),
+            playedColor: context.colors.primary,
+            handleColor: context.colors.accent,
+            backgroundColor: context.colors.outlineStrong,
           ),
         );
         _loading = false;
@@ -171,41 +173,37 @@ class _MediaViewerScreenState extends State<MediaViewerScreen> with WidgetsBindi
   }
 
   Widget _buildDocument() {
+    final c = context.colors;
+    final textTheme = Theme.of(context).textTheme;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.insert_drive_file, size: 64, color: Color(0xFF6B7280)),
-        const SizedBox(height: 16),
-        const Text(
-          'Document',
-          style: TextStyle(fontSize: 16, color: Color(0xFF9CA3AF)),
-        ),
+        Icon(Icons.insert_drive_file_outlined,
+            size: 64, color: c.textTertiary),
+        AppSpacing.gapLg,
+        Text('Document', style: textTheme.bodyLarge),
         if (widget.mimeType != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            widget.mimeType!,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-          ),
+          AppSpacing.gapSm,
+          Text(widget.mimeType!,
+              style: context.mono(fontSize: 12, color: c.textTertiary)),
         ],
       ],
     );
   }
 
   Widget _buildError() {
+    final c = context.colors;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.broken_image, size: 64, color: Color(0xFF6B7280)),
-        const SizedBox(height: 16),
-        const Text(
-          'Failed to load media',
-          style: TextStyle(fontSize: 16, color: Color(0xFFFCA5A5)),
-        ),
-        const SizedBox(height: 8),
+        Icon(Icons.broken_image_outlined, size: 64, color: c.textTertiary),
+        AppSpacing.gapLg,
         Text(
-          'Status: ${widget.streamUrl}',
-          style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
-          overflow: TextOverflow.ellipsis,
+          'Failed to load media',
+          style: Theme.of(context)
+              .textTheme
+              .bodyLarge
+              ?.copyWith(color: c.dangerText),
         ),
       ],
     );

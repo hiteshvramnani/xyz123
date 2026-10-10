@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../theme/theme.dart';
 import 'date_formatter.dart';
 import 'media_card.dart';
 import 'media_item_data.dart';
@@ -34,183 +36,96 @@ class PartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+
+    final allPhones = <String>[
+      if (phoneNumber != null && phoneNumber!.isNotEmpty) phoneNumber!,
+      ...?phoneNumbers,
+    ];
+    final allLocations = <String>[
+      if (location != null && location!.isNotEmpty) location!,
+      ...?locations,
+    ];
+
+    final isEmpty = (title == null || title!.isEmpty) &&
+        media.isEmpty &&
+        allPhones.isEmpty &&
+        allLocations.isEmpty;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: Color(0xFF1F2937)),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1F2937),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    isOriginal ? 'Original' : 'Addition $index',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF9CA3AF),
-                        fontWeight: FontWeight.w500),
-                  ),
-                ),
+                _PartBadge(label: isOriginal ? 'Original' : 'Addition $index'),
                 if (date != null) ...[
-                  const SizedBox(width: 8),
-                  Text(formatDate(date),
-                      style:
-                          const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                  AppSpacing.gapHSm,
+                  Text(
+                    formatDate(date),
+                    style: context.mono(fontSize: 11, color: c.textTertiary),
+                  ),
                 ],
               ],
             ),
-            // Title
             if (title != null && title!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              const Text('Title',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF9CA3AF),
-                      fontWeight: FontWeight.w500)),
-              const SizedBox(height: 4),
-              Text(title!,
-                  style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFFE5E7EB),
-                      height: 1.4)),
-            ] else if (isOriginal &&
-                media.isEmpty &&
-                phoneNumber == null &&
-                location == null &&
-                (phoneNumbers == null || phoneNumbers!.isEmpty) &&
-                (locations == null || locations!.isEmpty)) ...[
-              const SizedBox(height: 12),
-              const Text('No title submitted',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
-                      fontStyle: FontStyle.italic)),
-            ],
-            // Phone (single)
-            if (phoneNumber != null && phoneNumber!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.phone, size: 14, color: Color(0xFF60A5FA)),
-                  const SizedBox(width: 6),
-                  Text(phoneNumber!,
-                      style: const TextStyle(
-                          fontSize: 13, color: Color(0xFFD1D5DB))),
-                ],
-              ),
-            ],
-            // Phone (array)
-            if (phoneNumbers != null && phoneNumbers!.isNotEmpty) ...[
-              for (int i = 0; i < phoneNumbers!.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.phone, size: 14, color: Color(0xFF60A5FA)),
-                      const SizedBox(width: 6),
-                      Text(phoneNumbers![i],
-                          style: const TextStyle(
-                              fontSize: 13, color: Color(0xFFD1D5DB))),
-                    ],
-                  ),
+              AppSpacing.gapMd,
+              Text(title!, style: textTheme.bodyLarge),
+            ] else if (isEmpty) ...[
+              AppSpacing.gapMd,
+              Text(
+                'No title submitted',
+                style: textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
                 ),
-            ],
-            // Location (single)
-            if (location != null && location!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.location_on, size: 14, color: Color(0xFF22C55E)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(location!,
-                        style: const TextStyle(
-                            fontSize: 13, color: Color(0xFFD1D5DB))),
-                  ),
-                ],
               ),
-              if (_isCoords(location!)) ...[
-                const SizedBox(height: 8),
+            ],
+            for (final phone in allPhones) ...[
+              AppSpacing.gapSm,
+              _IconLine(
+                icon: Icons.phone_outlined,
+                iconColor: c.accent,
+                child: Text(phone, style: context.mono(color: c.textPrimary)),
+              ),
+            ],
+            for (final loc in allLocations) ...[
+              AppSpacing.gapSm,
+              _IconLine(
+                icon: Icons.location_on_outlined,
+                iconColor: c.accent,
+                child: Text(loc, style: context.mono(color: c.textPrimary)),
+              ),
+              if (_isCoords(loc)) ...[
+                AppSpacing.gapSm,
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _openMaps(location!),
-                    icon: const Icon(Icons.map, size: 16),
+                    onPressed: () => _openMaps(loc),
+                    icon: const Icon(Icons.map_outlined, size: AppIconSize.sm),
                     label: const Text('Open in Maps'),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      side: const BorderSide(color: Color(0xFF3B82F6), width: 1),
-                      backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-                      textStyle: const TextStyle(fontSize: 12),
-                    ).copyWith(
-                      foregroundColor: WidgetStateProperty.all(const Color(0xFF60A5FA)),
+                      minimumSize: const Size.fromHeight(40),
+                      textStyle: textTheme.labelSmall,
                     ),
                   ),
                 ),
               ],
             ],
-            // Location (array)
-            if (locations != null && locations!.isNotEmpty) ...[
-              for (int i = 0; i < locations!.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 14, color: Color(0xFF22C55E)),
-                          const SizedBox(width: 6),
-                          Text(locations![i],
-                              style: const TextStyle(
-                                  fontSize: 13, color: Color(0xFFD1D5DB))),
-                        ],
-                      ),
-                      if (_isCoords(locations![i])) ...[
-                        const SizedBox(height: 4),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () => _openMaps(locations![i]),
-                            icon: const Icon(Icons.map, size: 14),
-                            label: const Text('Open in Maps'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-                              side: const BorderSide(color: Color(0xFF3B82F6), width: 1),
-                              backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-                              textStyle: const TextStyle(fontSize: 11),
-                            ).copyWith(
-                              foregroundColor: WidgetStateProperty.all(const Color(0xFF60A5FA)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-            ],
-            // Media
             if (media.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              AppSpacing.gapMd,
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                 children: media
                     .map((m) => MediaCard(
                           mediaItem: m,
                           mediaUrls: mediaUrls,
-                          onTap: onMediaTap != null ? () => onMediaTap!(m) : null,
+                          onTap:
+                              onMediaTap != null ? () => onMediaTap!(m) : null,
                         ))
                     .toList(),
               ),
@@ -230,5 +145,61 @@ class PartCard extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+}
+
+class _PartBadge extends StatelessWidget {
+  const _PartBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: c.surfaceVariant,
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: c.outline),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: Theme.of(context)
+            .textTheme
+            .labelSmall
+            ?.copyWith(color: c.textSecondary, letterSpacing: 0.6),
+      ),
+    );
+  }
+}
+
+class _IconLine extends StatelessWidget {
+  const _IconLine({
+    required this.icon,
+    required this.iconColor,
+    required this.child,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(icon, size: AppIconSize.sm, color: iconColor),
+        ),
+        AppSpacing.gapHSm,
+        Expanded(child: child),
+      ],
+    );
   }
 }

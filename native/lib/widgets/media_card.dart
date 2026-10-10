@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../theme/theme.dart';
 import 'media_item_data.dart';
 
 class MediaCard extends StatefulWidget {
@@ -78,6 +79,7 @@ class _MediaCardState extends State<MediaCard> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final url = widget.mediaUrls[widget.mediaItem.id];
     final isImage = widget.mediaItem.mediaType == 'IMAGE';
     final isVideo = widget.mediaItem.mediaType == 'VIDEO';
@@ -85,25 +87,26 @@ class _MediaCardState extends State<MediaCard> {
     return GestureDetector(
       onTap: widget.onTap,
       child: SizedBox(
-        width: 100,
-        height: 100,
+        width: AppSizes.thumbnail,
+        height: AppSizes.thumbnail,
         child: Stack(
           fit: StackFit.expand,
           children: [
             if (isImage && url != null)
-              _buildImage()
+              _buildImage(c)
             else if (isVideo)
-              _buildVideoPlaceholder()
+              _buildVideoPlaceholder(c)
             else
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1F2937),
-                  borderRadius: BorderRadius.circular(8),
+                  color: c.surfaceVariant,
+                  borderRadius: AppRadii.brMd,
+                  border: Border.all(color: c.outline),
                 ),
-                child: const Icon(
-                  Icons.insert_drive_file,
-                  size: 32,
-                  color: Color(0xFF6B7280),
+                child: Icon(
+                  Icons.insert_drive_file_outlined,
+                  size: AppIconSize.xl,
+                  color: c.textTertiary,
                 ),
               ),
           ],
@@ -112,61 +115,41 @@ class _MediaCardState extends State<MediaCard> {
     );
   }
 
-  Widget _buildVideoPlaceholder() {
+  Widget _buildVideoPlaceholder(AppColors c) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadii.brMd,
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1F2937), Color(0xFF111827)],
-          ),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: const Color(0xFF374151).withValues(alpha: 0.5),
-            width: 1,
-          ),
+          color: c.surfaceVariant,
+          borderRadius: AppRadii.brMd,
+          border: Border.all(color: c.outline),
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            const Icon(Icons.videocam, size: 32, color: Color(0xFF6B7280)),
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.play_circle_fill,
-                    size: 36,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: Center(
+          child: Icon(
+            Icons.play_arrow_rounded,
+            size: AppIconSize.xl,
+            color: c.textSecondary,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(AppColors c) {
     Widget child;
     if (_loading) {
       child = const Center(
         child: SizedBox(
-          width: 20,
-          height: 20,
+          width: AppIconSize.md,
+          height: AppIconSize.md,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
       );
     } else if (_error || _imageBytes == null) {
-      child = const Icon(
-        Icons.broken_image,
-        size: 32,
-        color: Color(0xFF6B7280),
+      child = Icon(
+        Icons.broken_image_outlined,
+        size: AppIconSize.xl,
+        color: c.textTertiary,
       );
     } else {
       child = Image.memory(
@@ -176,11 +159,12 @@ class _MediaCardState extends State<MediaCard> {
       );
     }
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadii.brMd,
       child: Container(
         decoration: BoxDecoration(
-          color: _loading || _error ? const Color(0xFF1F2937) : null,
-          borderRadius: BorderRadius.circular(8),
+          color: c.surfaceVariant,
+          borderRadius: AppRadii.brMd,
+          border: Border.all(color: c.outline),
         ),
         child: child,
       ),
