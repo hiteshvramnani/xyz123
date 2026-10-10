@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mime/mime.dart';
+
 import '../models/submission.dart';
 import '../widgets/map_picker.dart';
 import '../widgets/part_card.dart';
@@ -94,8 +95,7 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
     for (final media in submission.media) {
       if (media.mediaType == 'IMAGE' || media.mediaType == 'VIDEO') {
         try {
-          final streamUrl =
-              await app.apiService.getMediaStreamUrl(media.id);
+          final streamUrl = await app.apiService.getMediaStreamUrl(media.id);
           urls[media.id] = streamUrl;
         } catch (_) {}
       }
@@ -151,7 +151,11 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
           children: [
             const Text(
               'Add Title',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFE5E7EB)),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFE5E7EB),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -164,14 +168,21 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
             ListenableBuilder(
               listenable: _titleEditCtrl,
               builder: (context, child) {
-                final isEmpty = _titleEditCtrl.text.trim().isEmpty || _savingTitle;
+                final isEmpty =
+                    _titleEditCtrl.text.trim().isEmpty || _savingTitle;
                 return SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: isEmpty ? null : _saveTitle,
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                     child: _savingTitle
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Text('Save', style: TextStyle(fontSize: 14)),
                   ),
                 );
@@ -191,8 +202,12 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
     );
     if (result != null) {
       setState(() {
-        _addLocationNames.add('${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}');
-        _addLocationCoords.add('${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}');
+        _addLocationNames.add(
+          '${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}',
+        );
+        _addLocationCoords.add(
+          '${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}',
+        );
       });
     }
   }
@@ -201,7 +216,10 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
     _dismissAddKeyboard();
     try {
       if (source == ImageSource.camera) {
-        final picked = await _imagePicker.pickImage(source: source, imageQuality: 80);
+        final picked = await _imagePicker.pickImage(
+          source: source,
+          imageQuality: 80,
+        );
         if (picked != null && mounted) setState(() => _addFiles.add(picked));
       } else {
         final picked = await _imagePicker.pickMultiImage(imageQuality: 80);
@@ -222,20 +240,37 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF111827),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Color(0xFF9CA3AF)),
-              title: const Text('Take Photo', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickAddPhotos(ImageSource.camera); },
+              title: const Text(
+                'Take Photo',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAddPhotos(ImageSource.camera);
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF9CA3AF)),
-              title: const Text('Choose from Gallery', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickAddPhotos(ImageSource.gallery); },
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFF9CA3AF),
+              ),
+              title: const Text(
+                'Choose from Gallery',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAddPhotos(ImageSource.gallery);
+              },
             ),
             const SizedBox(height: 8),
           ],
@@ -248,20 +283,37 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF111827),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.videocam, color: Color(0xFF9CA3AF)),
-              title: const Text('Record Video', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickAddVideos(ImageSource.camera); },
+              title: const Text(
+                'Record Video',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAddVideos(ImageSource.camera);
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.video_library, color: Color(0xFF9CA3AF)),
-              title: const Text('Choose from Gallery', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickAddVideos(ImageSource.gallery); },
+              leading: const Icon(
+                Icons.video_library,
+                color: Color(0xFF9CA3AF),
+              ),
+              title: const Text(
+                'Choose from Gallery',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAddVideos(ImageSource.gallery);
+              },
             ),
             const SizedBox(height: 8),
           ],
@@ -281,7 +333,10 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
       final fileMeta = <Map<String, dynamic>>[];
       for (final f in _addFiles) {
         fileMeta.add({
-          'mimeType': f.mimeType ?? lookupMimeType(f.path) ?? 'application/octet-stream',
+          'mimeType':
+              f.mimeType ??
+              lookupMimeType(f.path) ??
+              'application/octet-stream',
           'fileSizeBytes': await f.length(),
           'fileName': f.name,
         });
@@ -289,13 +344,17 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
 
       final result = await app.apiService.addToSubmission(
         widget.submissionId,
-        title: _addTitleCtrl.text.trim().isEmpty ? null : _addTitleCtrl.text.trim(),
+        title: _addTitleCtrl.text.trim().isEmpty
+            ? null
+            : _addTitleCtrl.text.trim(),
         files: fileMeta,
         phoneNumbers: _addPhoneNumbers,
         locations: _addLocationCoords,
       );
 
-      final uploadUrls = List<Map<String, dynamic>>.from(result['data']['uploadUrls'] ?? []);
+      final uploadUrls = List<Map<String, dynamic>>.from(
+        result['data']['uploadUrls'] ?? [],
+      );
 
       // Upload files
       if (_addFiles.isNotEmpty) {
@@ -303,9 +362,16 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
         for (int i = 0; i < _addFiles.length; i++) {
           final file = _addFiles[i];
           final urlData = uploadUrls[i];
-          final mimeType = file.mimeType ?? lookupMimeType(file.path) ?? 'application/octet-stream';
+          final mimeType =
+              file.mimeType ??
+              lookupMimeType(file.path) ??
+              'application/octet-stream';
           final bytes = await file.readAsBytes();
-          await app.apiService.uploadFile(urlData['uploadUrl'] as String, bytes, mimeType);
+          await app.apiService.uploadFile(
+            urlData['uploadUrl'] as String,
+            bytes,
+            mimeType,
+          );
           s3Keys.add(urlData['s3Key'] as String);
         }
         await app.apiService.finalizeEvidence(widget.submissionId, s3Keys);
@@ -343,7 +409,8 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
           title: const Text('Submission'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).canPop() ? Navigator.pop(context) : null,
+            onPressed: () =>
+                Navigator.of(context).canPop() ? Navigator.pop(context) : null,
           ),
           actions: [
             IconButton(
@@ -358,7 +425,7 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
                   context,
                   MaterialPageRoute(builder: (_) => HomeScreen()),
                 ),
-                onLock: app.logout,
+                onLock: app.logoutHandler,
               ),
             ),
           ],
@@ -373,7 +440,8 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
           title: const Text('Submission'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).canPop() ? Navigator.pop(context) : null,
+            onPressed: () =>
+                Navigator.of(context).canPop() ? Navigator.pop(context) : null,
           ),
           actions: [
             IconButton(
@@ -388,7 +456,7 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
                   context,
                   MaterialPageRoute(builder: (_) => HomeScreen()),
                 ),
-                onLock: app.logout,
+                onLock: app.logoutHandler,
               ),
             ),
           ],
@@ -397,9 +465,15 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error ?? 'Not found', style: const TextStyle(color: Color(0xFFFCA5A5))),
+              Text(
+                _error ?? 'Not found',
+                style: const TextStyle(color: Color(0xFFFCA5A5)),
+              ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Go Back')),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Go Back'),
+              ),
             ],
           ),
         ),
@@ -415,7 +489,8 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
         title: const Text('Submission'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).canPop() ? Navigator.pop(context) : null,
+          onPressed: () =>
+              Navigator.of(context).canPop() ? Navigator.pop(context) : null,
         ),
         actions: [
           IconButton(
@@ -430,7 +505,7 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => HomeScreen()),
               ),
-              onLock: app.logout,
+              onLock: app.logoutHandler,
             ),
           ),
         ],
@@ -438,23 +513,26 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (_submission!.what == null || _submission!.what!.trim().isEmpty) ...[
+          if (_submission!.what == null ||
+              _submission!.what!.trim().isEmpty) ...[
             _buildTitleEditCard(),
             const SizedBox(height: 12),
           ],
-          ...partsWithMedia.map((p) => PartCard(
-                index: p['index'] as int,
-                title: p['title'] as String?,
-                date: p['date'] as String?,
-                phoneNumber: p['phoneNumber'] as String?,
-                location: p['location'] as String?,
-                phoneNumbers: p['phoneNumbers'] as List<String>?,
-                locations: p['locations'] as List<String>?,
-                media: p['media'] as List<MediaItemData>,
-                mediaUrls: _mediaUrls,
-                isOriginal: p['isOriginal'] as bool,
-                onMediaTap: _openMediaViewer,
-              )),
+          ...partsWithMedia.map(
+            (p) => PartCard(
+              index: p['index'] as int,
+              title: p['title'] as String?,
+              date: p['date'] as String?,
+              phoneNumber: p['phoneNumber'] as String?,
+              location: p['location'] as String?,
+              phoneNumbers: p['phoneNumbers'] as List<String>?,
+              locations: p['locations'] as List<String>?,
+              media: p['media'] as List<MediaItemData>,
+              mediaUrls: _mediaUrls,
+              isOriginal: p['isOriginal'] as bool,
+              onMediaTap: _openMediaViewer,
+            ),
+          ),
           _buildAddToSubmission(),
           const SizedBox(height: 16),
         ],
@@ -481,18 +559,31 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF1F2937).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF374151).withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: const Color(0xFF374151).withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 children: [
                   const Icon(Icons.phone, size: 16, color: Color(0xFF60A5FA)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(phone, style: const TextStyle(fontSize: 13, color: Color(0xFFD1D5DB))),
+                    child: Text(
+                      phone,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFD1D5DB),
+                      ),
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: Color(0xFF6B7280)),
-                    onPressed: () => setState(() => _addPhoneNumbers.removeAt(idx)),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Color(0xFF6B7280),
+                    ),
+                    onPressed: () =>
+                        setState(() => _addPhoneNumbers.removeAt(idx)),
                   ),
                 ],
               ),
@@ -532,7 +623,10 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 8,
+                      ),
                     ),
                     child: const Text('Add', style: TextStyle(fontSize: 12)),
                   ),
@@ -583,23 +677,45 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF1F2937).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF374151).withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: const Color(0xFF374151).withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, size: 16, color: Color(0xFF22C55E)),
+                  const Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: Color(0xFF22C55E),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: const TextStyle(fontSize: 12, color: Color(0xFFD1D5DB))),
-                        Text(coords, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFD1D5DB),
+                          ),
+                        ),
+                        Text(
+                          coords,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: Color(0xFF6B7280)),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Color(0xFF6B7280),
+                    ),
                     onPressed: () => setState(() {
                       _addLocationNames.removeAt(idx);
                       _addLocationCoords.removeAt(idx);
@@ -634,11 +750,21 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Add to this Submission', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFE5E7EB))),
+            const Text(
+              'Add to this Submission',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFE5E7EB),
+              ),
+            ),
             const SizedBox(height: 12),
 
             // Title
-            const Text('Title', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+            const Text(
+              'Title',
+              style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _addTitleCtrl,
@@ -649,7 +775,10 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
             const SizedBox(height: 12),
 
             // Media
-            const Text('Attach Media', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+            const Text(
+              'Attach Media',
+              style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -682,24 +811,39 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
 
             // Selected files
             if (_addFiles.isNotEmpty) ...[
-              Text('${_addFiles.length} file(s) selected', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+              Text(
+                '${_addFiles.length} file(s) selected',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              ),
               const SizedBox(height: 4),
               ...List.generate(
-                  _addFiles.length,
-                  (i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(_addFiles[i].name, style: const TextStyle(fontSize: 12, color: Color(0xFFD1D5DB)), overflow: TextOverflow.ellipsis),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, size: 16, color: Color(0xFF6B7280)),
-                              onPressed: () => setState(() => _addFiles.removeAt(i)),
-                            ),
-                          ],
+                _addFiles.length,
+                (i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _addFiles[i].name,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFD1D5DB),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      )),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Color(0xFF6B7280),
+                        ),
+                        onPressed: () => setState(() => _addFiles.removeAt(i)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
             ],
 
@@ -719,9 +863,17 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF7F1D1D).withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFB91C1C).withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: const Color(0xFFB91C1C).withValues(alpha: 0.4),
+                  ),
                 ),
-                child: Text(_addError!, style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 12)),
+                child: Text(
+                  _addError!,
+                  style: const TextStyle(
+                    color: Color(0xFFFCA5A5),
+                    fontSize: 12,
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
             ],
@@ -733,11 +885,22 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
                 return SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _adding || !_hasAddContent ? null : _addToSubmission,
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                    onPressed: _adding || !_hasAddContent
+                        ? null
+                        : _addToSubmission,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                     child: _adding
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Add Submission', style: TextStyle(fontSize: 14)),
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            'Add Submission',
+                            style: TextStyle(fontSize: 14),
+                          ),
                   ),
                 );
               },
@@ -758,11 +921,13 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
     final mediaByPart = <int, List<MediaItemData>>{};
     for (final m in allMedia) {
       mediaByPart.putIfAbsent(m.partIndex, () => []);
-      mediaByPart[m.partIndex]!.add(MediaItemData.fromJson({
-        'id': m.id,
-        'mimeType': m.mimeType,
-        'mediaType': m.mediaType,
-      }));
+      mediaByPart[m.partIndex]!.add(
+        MediaItemData.fromJson({
+          'id': m.id,
+          'mimeType': m.mimeType,
+          'mediaType': m.mediaType,
+        }),
+      );
     }
 
     final origMedia = mediaByPart[0] ?? [];

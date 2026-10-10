@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mime/mime.dart';
+
 import '../services/storage_service.dart';
 import '../services/geolocation_service.dart';
 import '../main.dart' as app;
-import '../widgets/date_formatter.dart';
 import '../widgets/map_picker.dart';
 import 'uploading_screen.dart';
 import 'home_screen.dart';
@@ -23,13 +23,11 @@ class _SubmitScreenState extends State<SubmitScreen> {
   final _imagePicker = ImagePicker();
   final List<XFile> _files = [];
 
-  // Phone numbers
   final List<String> _phoneNumbers = [];
   final TextEditingController _phoneInputCtrl = TextEditingController();
   final FocusNode _phoneInputFocus = FocusNode();
   bool _showPhoneInput = false;
 
-  // Locations (multiple)
   final List<String> _locationNames = [];
   final List<String> _locationCoords = [];
 
@@ -51,13 +49,23 @@ class _SubmitScreenState extends State<SubmitScreen> {
     FocusScope.of(context).unfocus();
   }
 
-  // ── Media pickers ───────────────────────────────────────
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _titleFocus.dispose();
+    _phoneInputCtrl.dispose();
+    _phoneInputFocus.dispose();
+    super.dispose();
+  }
 
   void _pickPhotos(ImageSource source) async {
     _dismissKeyboard();
     try {
       if (source == ImageSource.camera) {
-        final picked = await _imagePicker.pickImage(source: source, imageQuality: 80);
+        final picked = await _imagePicker.pickImage(
+          source: source,
+          imageQuality: 80,
+        );
         if (picked != null && mounted) setState(() => _files.add(picked));
       } else {
         final picked = await _imagePicker.pickMultiImage(imageQuality: 80);
@@ -78,20 +86,37 @@ class _SubmitScreenState extends State<SubmitScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF111827),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Color(0xFF9CA3AF)),
-              title: const Text('Take Photo', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickPhotos(ImageSource.camera); },
+              title: const Text(
+                'Take Photo',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickPhotos(ImageSource.camera);
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF9CA3AF)),
-              title: const Text('Choose from Gallery', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickPhotos(ImageSource.gallery); },
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFF9CA3AF),
+              ),
+              title: const Text(
+                'Choose from Gallery',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickPhotos(ImageSource.gallery);
+              },
             ),
             const SizedBox(height: 8),
           ],
@@ -104,20 +129,37 @@ class _SubmitScreenState extends State<SubmitScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF111827),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.videocam, color: Color(0xFF9CA3AF)),
-              title: const Text('Record Video', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickVideos(ImageSource.camera); },
+              title: const Text(
+                'Record Video',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickVideos(ImageSource.camera);
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.video_library, color: Color(0xFF9CA3AF)),
-              title: const Text('Choose from Gallery', style: TextStyle(color: Color(0xFFE5E7EB))),
-              onTap: () { Navigator.pop(ctx); _pickVideos(ImageSource.gallery); },
+              leading: const Icon(
+                Icons.video_library,
+                color: Color(0xFF9CA3AF),
+              ),
+              title: const Text(
+                'Choose from Gallery',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickVideos(ImageSource.gallery);
+              },
             ),
             const SizedBox(height: 8),
           ],
@@ -125,8 +167,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
       ),
     );
   }
-
-  // ── Location ────────────────────────────────────────────
 
   Future<void> _openMapPicker() async {
     _dismissKeyboard();
@@ -136,16 +176,25 @@ class _SubmitScreenState extends State<SubmitScreen> {
     );
     if (result != null) {
       setState(() {
-        _locationNames.add('${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}');
-        _locationCoords.add('${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}');
+        _locationNames.add(
+          '${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}',
+        );
+        _locationCoords.add(
+          '${result.latitude.toStringAsFixed(6)},${result.longitude.toStringAsFixed(6)}',
+        );
       });
     }
   }
 
-  // ── Submit ──────────────────────────────────────────────
-
   Future<void> _submit() async {
     if (!_hasContent) return;
+    _dismissKeyboard();
+
+    if (_phoneInputCtrl.text.trim().isNotEmpty) {
+      _phoneNumbers.add(_phoneInputCtrl.text.trim());
+      _phoneInputCtrl.clear();
+    }
+
     setState(() {
       _submitting = true;
       _error = null;
@@ -161,7 +210,10 @@ class _SubmitScreenState extends State<SubmitScreen> {
       for (final f in _files) {
         final bytes = await f.readAsBytes();
         fileMeta.add({
-          'mimeType': f.mimeType ?? lookupMimeType(f.path) ?? 'application/octet-stream',
+          'mimeType':
+              f.mimeType ??
+              lookupMimeType(f.path) ??
+              'application/octet-stream',
           'fileSizeBytes': bytes.length,
           'fileName': f.name,
         });
@@ -170,7 +222,9 @@ class _SubmitScreenState extends State<SubmitScreen> {
       final result = await app.apiService.submitEvidence(
         title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
         files: fileMeta,
-        location: gpsLocation ?? (_locationCoords.isNotEmpty ? _locationCoords.first : null),
+        location:
+            gpsLocation ??
+            (_locationCoords.isNotEmpty ? _locationCoords.first : null),
         deviceInfo: deviceInfo,
         timezone: timezone,
         browserId: browserId,
@@ -178,10 +232,14 @@ class _SubmitScreenState extends State<SubmitScreen> {
         locations: _locationCoords,
       );
 
-      final uploadUrls = List<Map<String, dynamic>>.from(result['data']['uploadUrls'] ?? []);
+      final uploadUrls = List<Map<String, dynamic>>.from(
+        result['data']['uploadUrls'] ?? [],
+      );
       final submissionId = result['data']['submissionId'] as String;
 
       if (!mounted) return;
+      setState(() => _submitting = false);
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -203,10 +261,10 @@ class _SubmitScreenState extends State<SubmitScreen> {
     }
   }
 
-  // ── UI Builders ─────────────────────────────────────────
-
   Widget _buildFileCard(int idx, XFile file) {
-    final isImage = file.mimeType?.startsWith('image/') == true;
+    final isImage =
+        file.mimeType?.startsWith('image/') == true ||
+        lookupMimeType(file.path)?.startsWith('image/') == true;
     return Card(
       key: ValueKey(file.path),
       margin: const EdgeInsets.only(bottom: 6),
@@ -216,12 +274,21 @@ class _SubmitScreenState extends State<SubmitScreen> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-        leading: Icon(isImage ? Icons.image : Icons.videocam,
-            color: isImage ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280)),
-        title: Text(file.name, style: const TextStyle(fontSize: 13, color: Color(0xFFE5E7EB)), overflow: TextOverflow.ellipsis),
+        leading: Icon(
+          isImage ? Icons.image : Icons.videocam,
+          color: isImage ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+        ),
+        title: Text(
+          file.name,
+          style: const TextStyle(fontSize: 13, color: Color(0xFFE5E7EB)),
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: FutureBuilder<int>(
           future: file.length(),
-          builder: (_, snap) => Text(formatFileSize(snap.data ?? 0), style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+          builder: (_, snap) => Text(
+            formatFileSize(snap.data ?? 0),
+            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+          ),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.close, size: 18, color: Color(0xFF6B7280)),
@@ -236,7 +303,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Existing phone chips
         if (_phoneNumbers.isNotEmpty) ...[
           ..._phoneNumbers.asMap().entries.map((entry) {
             final idx = entry.key;
@@ -248,26 +314,37 @@ class _SubmitScreenState extends State<SubmitScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF1F2937).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF374151).withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: const Color(0xFF374151).withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 children: [
                   const Icon(Icons.phone, size: 16, color: Color(0xFF60A5FA)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(phone, style: const TextStyle(fontSize: 13, color: Color(0xFFD1D5DB))),
+                    child: Text(
+                      phone,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFD1D5DB),
+                      ),
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: Color(0xFF6B7280)),
-                    onPressed: () => setState(() => _phoneNumbers.removeAt(idx)),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Color(0xFF6B7280),
+                    ),
+                    onPressed: () =>
+                        setState(() => _phoneNumbers.removeAt(idx)),
                   ),
                 ],
               ),
             );
           }),
         ],
-
-        // Input field (shown when user taps "+ Add Phone Number")
         if (_showPhoneInput) ...[
           const SizedBox(height: 6),
           Row(
@@ -299,7 +376,10 @@ class _SubmitScreenState extends State<SubmitScreen> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 8,
+                      ),
                     ),
                     child: const Text('Add', style: TextStyle(fontSize: 12)),
                   ),
@@ -316,8 +396,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
             child: const Text('Cancel'),
           ),
         ],
-
-        // Always show the "+ Add Phone Number" button when not in input mode
         if (!_showPhoneInput) ...[
           if (_phoneNumbers.isNotEmpty) const SizedBox(height: 4),
           TextButton.icon(
@@ -335,7 +413,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Existing location chips
         if (_locationCoords.isNotEmpty) ...[
           ..._locationCoords.asMap().entries.map((entry) {
             final idx = entry.key;
@@ -348,23 +425,45 @@ class _SubmitScreenState extends State<SubmitScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF1F2937).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF374151).withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: const Color(0xFF374151).withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, size: 16, color: Color(0xFF22C55E)),
+                  const Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: Color(0xFF22C55E),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: const TextStyle(fontSize: 12, color: Color(0xFFD1D5DB))),
-                        Text(coords, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFD1D5DB),
+                          ),
+                        ),
+                        Text(
+                          coords,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: Color(0xFF6B7280)),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Color(0xFF6B7280),
+                    ),
                     onPressed: () => setState(() {
                       _locationNames.removeAt(idx);
                       _locationCoords.removeAt(idx);
@@ -375,8 +474,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
             );
           }),
         ],
-
-        // Always show the "+ Add Location" button
         TextButton.icon(
           onPressed: _openMapPicker,
           icon: const Icon(Icons.add, size: 18),
@@ -385,8 +482,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
       ],
     );
   }
-
-  // ── Build ───────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -400,9 +495,9 @@ class _SubmitScreenState extends State<SubmitScreen> {
               context,
               onNavigateSubmissions: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => HomeScreen()),
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
               ),
-              onLock: app.logout,
+              onLock: app.logoutHandler,
             ),
           ),
         ],
@@ -410,8 +505,10 @@ class _SubmitScreenState extends State<SubmitScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Title
-          const Text('Title', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+          const Text(
+            'Title',
+            style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _titleCtrl,
@@ -420,9 +517,10 @@ class _SubmitScreenState extends State<SubmitScreen> {
             decoration: const InputDecoration(hintText: 'Brief Description'),
           ),
           const SizedBox(height: 20),
-
-          // Attach Media
-          const Text('Attach Media', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+          const Text(
+            'Attach Media',
+            style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -433,7 +531,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
                   label: const Text('Photos'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Color(0xFF374151), style: BorderStyle.solid),
+                    side: const BorderSide(color: Color(0xFF374151)),
                   ),
                 ),
               ),
@@ -445,32 +543,29 @@ class _SubmitScreenState extends State<SubmitScreen> {
                   label: const Text('Videos'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Color(0xFF374151), style: BorderStyle.solid),
+                    side: const BorderSide(color: Color(0xFF374151)),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-
-          // Selected Files
           if (_files.isNotEmpty) ...[
-            Text('Selected files (${_files.length})', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+            Text(
+              'Selected files (${_files.length})',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
             const SizedBox(height: 4),
-            ...List.generate(_files.length, (i) => _buildFileCard(i, _files[i])),
+            ...List.generate(
+              _files.length,
+              (i) => _buildFileCard(i, _files[i]),
+            ),
             const SizedBox(height: 16),
           ],
-
-          // Phone Numbers
           _buildPhoneSection(),
-
-          // Location
           const SizedBox(height: 4),
           _buildLocationSection(),
-
           const SizedBox(height: 8),
-
-          // Error
           if (_error != null) ...[
             Container(
               width: double.infinity,
@@ -478,14 +573,17 @@ class _SubmitScreenState extends State<SubmitScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF7F1D1D).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFB91C1C).withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: const Color(0xFFB91C1C).withValues(alpha: 0.4),
+                ),
               ),
-              child: Text(_error!, style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13)),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13),
+              ),
             ),
             const SizedBox(height: 12),
           ],
-
-          // Submit button
           ListenableBuilder(
             listenable: _titleCtrl,
             builder: (context, child) {
@@ -495,11 +593,23 @@ class _SubmitScreenState extends State<SubmitScreen> {
                   onPressed: _submitting || !_hasContent ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
                   child: _submitting
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Submit', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Submit',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
               );
             },
@@ -509,13 +619,11 @@ class _SubmitScreenState extends State<SubmitScreen> {
       ),
     );
   }
+}
 
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _titleFocus.dispose();
-    _phoneInputCtrl.dispose();
-    _phoneInputFocus.dispose();
-    super.dispose();
-  }
+String formatFileSize(int bytes) {
+  if (bytes <= 0) return "0 B";
+  if (bytes < 1024) return "$bytes B";
+  if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
+  return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
 }

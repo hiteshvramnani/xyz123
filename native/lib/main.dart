@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:screen_protector/screen_protector.dart';
+
 import 'screens/auth_screen.dart';
 import 'screens/submit_screen.dart';
 import 'services/api_service.dart';
@@ -6,23 +8,37 @@ import 'config.dart';
 
 late final ApiService apiService;
 
-/// Called to lock the app and re-prompt Face ID.
-void Function() logout = () {};
+/// Global state handlers accessible by child screens
+void Function() logoutHandler = () {};
+bool isSystemAuthPromptActive = false;
 
 /// Show the hamburger menu.
-void showMenu(BuildContext context, {required void Function() onNavigateSubmissions, required void Function() onLock, void Function()? onNavigateNew}) {
+void showMenu(
+  BuildContext context, {
+  required void Function() onNavigateSubmissions,
+  required void Function() onLock,
+  void Function()? onNavigateNew,
+}) {
   showModalBottomSheet(
     context: context,
     backgroundColor: const Color(0xFF111827),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+    ),
     builder: (ctx) => SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (onNavigateNew != null)
             ListTile(
-              leading: const Icon(Icons.add_circle_outline, color: Color(0xFF9CA3AF)),
-              title: const Text('New Submission', style: TextStyle(color: Color(0xFFE5E7EB))),
+              leading: const Icon(
+                Icons.add_circle_outline,
+                color: Color(0xFF9CA3AF),
+              ),
+              title: const Text(
+                'New Submission',
+                style: TextStyle(color: Color(0xFFE5E7EB)),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 onNavigateNew();
@@ -30,7 +46,10 @@ void showMenu(BuildContext context, {required void Function() onNavigateSubmissi
             ),
           ListTile(
             leading: const Icon(Icons.list, color: Color(0xFF9CA3AF)),
-            title: const Text('My Submissions', style: TextStyle(color: Color(0xFFE5E7EB))),
+            title: const Text(
+              'My Submissions',
+              style: TextStyle(color: Color(0xFFE5E7EB)),
+            ),
             onTap: () {
               Navigator.pop(ctx);
               onNavigateSubmissions();
@@ -38,7 +57,10 @@ void showMenu(BuildContext context, {required void Function() onNavigateSubmissi
           ),
           ListTile(
             leading: const Icon(Icons.lock_outline, color: Color(0xFFEF4444)),
-            title: const Text('Lock', style: TextStyle(color: Color(0xFFEF4444))),
+            title: const Text(
+              'Lock',
+              style: TextStyle(color: Color(0xFFEF4444)),
+            ),
             onTap: () {
               Navigator.pop(ctx);
               onLock();
@@ -52,6 +74,7 @@ void showMenu(BuildContext context, {required void Function() onNavigateSubmissi
 }
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   apiService = ApiService(baseUrl: baseUrl);
   runApp(const MyApp());
 }
@@ -62,15 +85,100 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Data',
+      title: 'Data Collection Platform',
       debugShowCheckedModeBanner: false,
       theme: darkTheme,
-      home: const AuthScreen(child: _AppRoot()),
+      home: const _AppWrapper(),
     );
   }
 }
 
-/// Navigable app content shown only after authentication.
+class _AppWrapper extends StatefulWidget {
+  const _AppWrapper();
+
+  @override
+  State<_AppWrapper> createState() => _AppWrapperState();
+}
+
+class _AppWrapperState extends State<_AppWrapper> with WidgetsBindingObserver {
+  bool _isAppInBackground = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initScreenProtection();
+  }
+
+  void _initScreenProtection() async {
+    await ScreenProtector.preventScreenshotOn();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+
+    // Ignore lifecycle evaluation if the OS biometrics box is active
+    if (isSystemAuthPromptActive) return;
+
+    setState(() {
+      _isAppInBackground =
+          (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.inactive);
+    });
+  }
+
+  Widget _buildPlaceholderView() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0F),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, color: Color(0xFFEF4444), size: 40),
+            const SizedBox(height: 16),
+            const Text(
+              'App is minimized for your security',
+              style: TextStyle(
+                color: Color(0xFF9CA3AF),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                setState(() => _isAppInBackground = false);
+              },
+              child: const Text(
+                'Tap here to resume',
+                style: TextStyle(
+                  color: Color(0xFF2563EB),
+                  fontSize: 14,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _isAppInBackground
+        ? _buildPlaceholderView()
+        : const AuthScreen(child: _AppRoot());
+  }
+}
+
 class _AppRoot extends StatelessWidget {
   const _AppRoot();
 
@@ -80,56 +188,60 @@ class _AppRoot extends StatelessWidget {
   }
 }
 
-final darkTheme = ThemeData.from(
-  colorScheme: const ColorScheme.dark(
-    primary: Color(0xFF2563EB),
-    onPrimary: Colors.white,
-    surface: Color(0xFF111827),
-    onSurface: Color(0xFFE5E7EB),
-    onSurfaceVariant: Color(0xFF9CA3AF),
-    outline: Color(0xFF1F2937),
-  ),
-).copyWith(
-  scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF111827),
-    elevation: 0,
-    titleTextStyle: TextStyle(
-      color: Color(0xFFE5E7EB),
-      fontSize: 20,
-      fontWeight: FontWeight.bold,
-    ),
-    iconTheme: IconThemeData(color: Color(0xFF9CA3AF)),
-  ),
-  cardTheme: const CardThemeData(
-    color: Color(0xFF111827),
-    elevation: 0,
-    margin: EdgeInsets.zero,
-  ),
-  inputDecorationTheme: const InputDecorationTheme(
-    filled: true,
-    fillColor: Color(0xFF111827),
-    border: OutlineInputBorder(
-      borderSide: BorderSide(color: Color(0xFF1F2937)),
-      borderRadius: BorderRadius.all(Radius.circular(6)),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Color(0xFF1F2937)),
-      borderRadius: BorderRadius.all(Radius.circular(6)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Color(0xFF2563EB)),
-      borderRadius: BorderRadius.all(Radius.circular(6)),
-    ),
-    hintStyle: TextStyle(color: Color(0xFF6B7280)),
-    labelStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-  ),
-  textTheme: const TextTheme(
-    bodyLarge: TextStyle(color: Color(0xFFE5E7EB)),
-    bodyMedium: TextStyle(color: Color(0xFF9CA3AF)),
-    bodySmall: TextStyle(color: Color(0xFF6B7280)),
-    labelLarge: TextStyle(color: Color(0xFFE5E7EB), fontWeight: FontWeight.w500),
-  ),
-  iconTheme: const IconThemeData(color: Color(0xFF9CA3AF)),
-);
+final darkTheme =
+    ThemeData.from(
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF2563EB),
+        onPrimary: Colors.white,
+        surface: Color(0xFF111827),
+        onSurface: Color(0xFFE5E7EB),
+        onSurfaceVariant: Color(0xFF9CA3AF),
+        outline: Color(0xFF1F2937),
+      ),
+    ).copyWith(
+      scaffoldBackgroundColor: const Color(0xFF0A0A0F),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF111827),
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          color: Color(0xFFE5E7EB),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(color: Color(0xFF9CA3AF)),
+      ),
+      cardTheme: const CardThemeData(
+        color: Color(0xFF111827),
+        elevation: 0,
+        margin: EdgeInsets.zero,
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: Color(0xFF111827),
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF1F2937)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF1F2937)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF2563EB)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
+        ),
+        hintStyle: TextStyle(color: Color(0xFF6B7280)),
+        labelStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Color(0xFFE5E7EB)),
+        bodyMedium: TextStyle(color: Color(0xFF9CA3AF)),
+        bodySmall: TextStyle(color: Color(0xFF6B7280)),
+        labelLarge: TextStyle(
+          color: Color(0xFFE5E7EB),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      iconTheme: const IconThemeData(color: Color(0xFF9CA3AF)),
+    );

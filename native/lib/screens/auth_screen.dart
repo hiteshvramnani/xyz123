@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import '../main.dart' as app;
+
+import '../main.dart'; // Imports the global variables without naming collisions
 
 typedef ActivityCallback = void Function();
 
@@ -35,7 +37,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    app.logout = logout;
+    logoutHandler = logout; // Safely sets the global lock tracker callback
     _authenticate();
   }
 
@@ -50,7 +52,11 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    if (state == AppLifecycleState.paused) {
+    // Stop evaluation if the OS biometric window is on top
+    if (isSystemAuthPromptActive) return;
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _wasPaused = _authenticated;
       _inactivityTimer?.cancel();
       return;
@@ -81,7 +87,6 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Called by the logout button in the app bar.
   void logout() {
     _lockApp();
   }
@@ -94,6 +99,9 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
     });
 
     try {
+      // Toggle the global state variable
+      isSystemAuthPromptActive = true;
+
       final didAuthenticate = await _auth.authenticate(
         localizedReason: 'Authenticate to access the app',
         options: const AuthenticationOptions(
@@ -103,20 +111,25 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
         ),
       );
 
+      isSystemAuthPromptActive = false;
+
       if (mounted) {
         setState(() {
           if (didAuthenticate) {
             _authenticated = true;
             _cancelled = false;
+            _resetInactivityTimer();
           } else {
             _cancelled = true;
           }
         });
       }
     } on Exception catch (e) {
+      isSystemAuthPromptActive = false;
       if (mounted) {
         setState(() {
-          _error = 'Authentication failed: ${e.toString().replaceAll('Exception: ', '')}';
+          _error =
+              'Authentication failed: ${e.toString().replaceAll('Exception: ', '')}';
         });
       }
     }
@@ -124,19 +137,15 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    // Keep child in tree so nav stack is preserved,
-    // but overlay the lock screen when not authenticated.
     return Stack(
       children: [
         if (_authenticated) _buildAuthenticatedContent(),
-        if (!_authenticated)
-          Positioned.fill(child: _buildLockScreen()),
+        if (!_authenticated) Positioned.fill(child: _buildLockScreen()),
       ],
     );
   }
 
   Widget _buildAuthenticatedContent() {
-    _resetInactivityTimer();
     return Listener(
       onPointerDown: (_) => _onActivity(),
       onPointerSignal: (event) => _onActivity(),
@@ -157,10 +166,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0A0A0F),
-              Color(0xFF111827),
-            ],
+            colors: [Color(0xFF0A0A0F), Color(0xFF111827)],
           ),
         ),
         child: SafeArea(
@@ -192,10 +198,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                       color: Color(0xFFE5E7EB),
                     ),
                   ),
-                  const SizedBox(height: 8),
                   const SizedBox(height: 48),
-
-                  // Real error — red box
                   if (_error != null) ...[
                     Container(
                       width: double.infinity,
@@ -204,12 +207,15 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                         color: const Color(0xFF7F1D1D).withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: const Color(0xFFB91C1C).withValues(alpha: 0.4)),
+                          color: const Color(0xFFB91C1C).withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Text(
                         _error!,
                         style: const TextStyle(
-                            color: Color(0xFFFCA5A5), fontSize: 13),
+                          color: Color(0xFFFCA5A5),
+                          fontSize: 13,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -226,15 +232,11 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
-                  // User cancelled — neutral state
                   ] else if (_cancelled) ...[
                     const SizedBox(height: 24),
-                    Text(
+                    const Text(
                       'Re-authenticate when ready.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF9CA3AF),
-                      ),
+                      style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
@@ -249,7 +251,6 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
-                  // Waiting for Face ID
                   ] else
                     const SizedBox(
                       height: 24,
@@ -257,7 +258,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF2563EB)),
+                          Color(0xFF2563EB),
+                        ),
                       ),
                     ),
                 ],

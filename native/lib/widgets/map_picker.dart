@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+
 import '../services/location_search.dart';
 
 class MapPickerScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     // Wait for keyboard animation to settle before moving the map
     await Future<void>.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
-    await _mapController.move(point, 14);
+    _mapController.move(point, 14);
   }
 
   Future<void> _getCurrentLocation() async {
@@ -90,7 +91,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         _selectedLocation = LatLng(position.latitude, position.longitude);
         _gettingLocation = false;
       });
-      await _mapController.move(_selectedLocation!, 16);
+      _mapController.move(_selectedLocation!, 16);
     } catch (_) {
       if (mounted) setState(() => _gettingLocation = false);
     }
@@ -132,9 +133,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 tileProvider: NetworkTileProvider(
-                  headers: {
-                    'User-Agent': 'DataCollectionApp/1.0',
-                  },
+                  headers: {'User-Agent': 'DataCollectionApp/1.0'},
                 ),
               ),
               MarkerLayer(
@@ -171,8 +170,10 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     GestureDetector(
@@ -184,8 +185,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.close,
-                            color: Colors.white, size: 22),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ],
@@ -220,12 +224,17 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Search for a place',
-                      hintStyle:
-                          const TextStyle(color: Color(0xFF6B7280), fontSize: 14),
-                      prefixIcon: const Icon(Icons.search,
-                          size: 20, color: Color(0xFF9CA3AF)),
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: 20,
+                        color: Color(0xFF9CA3AF),
+                      ),
                       suffixIcon: _searchLoading
-                          ? SizedBox(
+                          ? const SizedBox(
                               width: 32,
                               height: 32,
                               child: Align(
@@ -234,30 +243,36 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: const AlwaysStoppedAnimation<
-                                        Color>(Color(0xFF2563EB)),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF2563EB),
+                                    ),
                                   ),
                                 ),
                               ),
                             )
                           : _searchCtrl.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear,
-                                      size: 18, color: Color(0xFF9CA3AF)),
-                                  onPressed: () {
-                                    _searchCtrl.clear();
-                                    setState(() => _suggestions.clear());
-                                    _searchFocus.requestFocus();
-                                  },
-                                )
-                              : null,
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: Color(0xFF9CA3AF),
+                              ),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                setState(() => _suggestions.clear());
+                                _searchFocus.requestFocus();
+                              },
+                            )
+                          : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       filled: false,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
                     ),
                     onChanged: (val) {
                       if (val.trim().isEmpty) {
@@ -283,11 +298,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       child: Material(
                         color: const Color(0xFF111827),
                         borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(12)),
+                          bottom: Radius.circular(12),
+                        ),
                         child: Container(
                           constraints: BoxConstraints(
-                            maxHeight:
-                                MediaQuery.of(context).size.height * 0.3,
+                            maxHeight: MediaQuery.of(context).size.height * 0.3,
                           ),
                           decoration: BoxDecoration(
                             boxShadow: [
@@ -302,16 +317,23 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                             shrinkWrap: true,
                             itemCount: _suggestions.length.clamp(0, 5),
                             separatorBuilder: (_, _) => const Divider(
-                                height: 1, color: Color(0xFF1F2937)),
+                              height: 1,
+                              color: Color(0xFF1F2937),
+                            ),
                             itemBuilder: (_, i) {
                               final s = _suggestions[i];
                               return ListTile(
-                                leading: const Icon(Icons.location_on,
-                                    size: 18, color: Color(0xFF60A5FA)),
+                                leading: const Icon(
+                                  Icons.location_on,
+                                  size: 18,
+                                  color: Color(0xFF60A5FA),
+                                ),
                                 title: Text(
                                   s.displayName,
                                   style: const TextStyle(
-                                      color: Color(0xFFE5E7EB), fontSize: 13),
+                                    color: Color(0xFFE5E7EB),
+                                    fontSize: 13,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -350,18 +372,21 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   ),
                   child: Center(
                     child: _gettingLocation
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor:
-                                  const AlwaysStoppedAnimation<Color>(
-                                      Color(0xFF2563EB)),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF2563EB),
+                              ),
                             ),
                           )
-                        : const Icon(Icons.my_location,
-                            size: 24, color: Color(0xFF9CA3AF)),
+                        : const Icon(
+                            Icons.my_location,
+                            size: 24,
+                            color: Color(0xFF9CA3AF),
+                          ),
                   ),
                 ),
               ),
@@ -380,13 +405,12 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: _selectedLocation != null
-                      ? () =>
-                          Navigator.pop(context, _selectedLocation)
+                      ? () => Navigator.pop(context, _selectedLocation)
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
-                    disabledBackgroundColor:
-                        const Color(0xFF2563EB).withValues(alpha: 0.3),
+                    disabledBackgroundColor: const Color(0xFF2563EB)
+                        .withValues(alpha: 0.3),
                     disabledForegroundColor: const Color(0xFF6B7280),
                     elevation: 4,
                     shadowColor: Colors.black.withValues(alpha: 0.3),
@@ -394,11 +418,14 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Insert Location',
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white)),
+                  child: const Text(
+                    'Insert Location',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),

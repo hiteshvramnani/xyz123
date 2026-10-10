@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
+
 import '../main.dart' as app;
 import 'home_screen.dart';
 import 'submit_screen.dart';
@@ -43,14 +44,23 @@ class _UploadingScreenState extends State<UploadingScreen> {
       final s3Keys = <String>[];
       for (int i = 0; i < widget.files.length; i++) {
         if (!mounted) return;
-        setState(() => _progress = 'Uploading file ${i + 1}/${widget.files.length}...');
+        setState(
+          () => _progress = 'Uploading file ${i + 1}/${widget.files.length}...',
+        );
 
         final file = widget.files[i];
         final urlData = widget.uploadUrls[i];
-        final mimeType = file.mimeType ?? lookupMimeType(file.path) ?? 'application/octet-stream';
+        final mimeType =
+            file.mimeType ??
+            lookupMimeType(file.path) ??
+            'application/octet-stream';
         final bytes = await file.readAsBytes();
 
-        await app.apiService.uploadFile(urlData['uploadUrl'] as String, bytes, mimeType);
+        await app.apiService.uploadFile(
+          urlData['uploadUrl'] as String,
+          bytes,
+          mimeType,
+        );
         s3Keys.add(urlData['s3Key'] as String);
       }
 
@@ -75,7 +85,11 @@ class _UploadingScreenState extends State<UploadingScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF111827),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text('Submission Uploaded', textAlign: TextAlign.center, style: TextStyle(fontSize: 20)),
+        title: const Text(
+          'Submission Uploaded',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 20),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -92,16 +106,21 @@ class _UploadingScreenState extends State<UploadingScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => SubmitScreen()),
+                  Navigator.of(ctx).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const SubmitScreen()),
                     (route) => false,
                   );
                 },
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('New Submission', style: TextStyle(fontSize: 14)),
+                label: const Text(
+                  'New Submission',
+                  style: TextStyle(fontSize: 14),
+                ),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
               ),
             ),
@@ -110,17 +129,22 @@ class _UploadingScreenState extends State<UploadingScreen> {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => HomeScreen()),
+                  Navigator.of(ctx).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
                     (route) => false,
                   );
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   side: const BorderSide(color: Color(0xFF374151)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
-                child: const Text('View My Submissions', style: TextStyle(fontSize: 14)),
+                child: const Text(
+                  'View My Submissions',
+                  style: TextStyle(fontSize: 14),
+                ),
               ),
             ),
           ],
@@ -146,16 +170,29 @@ class _UploadingScreenState extends State<UploadingScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF7F1D1D).withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFB91C1C).withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: const Color(0xFFB91C1C).withValues(alpha: 0.4),
+                    ),
                   ),
-                  child: Text(_error!, style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13)),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: Color(0xFFFCA5A5),
+                      fontSize: 13,
+                    ),
+                  ),
                 )
               else ...[
-                const CircularProgressIndicator(),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                ),
                 const SizedBox(height: 24),
                 Text(
                   _progress,
-                  style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                  style: const TextStyle(
+                    color: Color(0xFF9CA3AF),
+                    fontSize: 14,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],

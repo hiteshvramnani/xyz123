@@ -1,6 +1,8 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'media_item_data.dart';
 
 class MediaCard extends StatefulWidget {
@@ -51,11 +53,8 @@ class _MediaCardState extends State<MediaCard> {
 
     try {
       final response = await http
-          .get(Uri.parse(url), headers: {
-        'ngrok-skip-browser-warning': 'true',
-      }).timeout(
-        const Duration(seconds: 30),
-      );
+          .get(Uri.parse(url), headers: {'ngrok-skip-browser-warning': 'true'})
+          .timeout(const Duration(seconds: 30));
 
       if (mounted) {
         setState(() {
@@ -101,7 +100,11 @@ class _MediaCardState extends State<MediaCard> {
                   color: const Color(0xFF1F2937),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.insert_drive_file, size: 32, color: Color(0xFF6B7280)),
+                child: const Icon(
+                  Icons.insert_drive_file,
+                  size: 32,
+                  color: Color(0xFF6B7280),
+                ),
               ),
           ],
         ),
@@ -114,13 +117,10 @@ class _MediaCardState extends State<MediaCard> {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1F2937),
-              const Color(0xFF111827),
-            ],
+            colors: [Color(0xFF1F2937), Color(0xFF111827)],
           ),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
@@ -131,11 +131,7 @@ class _MediaCardState extends State<MediaCard> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Icon(
-              Icons.videocam,
-              size: 32,
-              color: Color(0xFF6B7280),
-            ),
+            const Icon(Icons.videocam, size: 32, color: Color(0xFF6B7280)),
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -167,7 +163,11 @@ class _MediaCardState extends State<MediaCard> {
         ),
       );
     } else if (_error || _imageBytes == null) {
-      child = const Icon(Icons.broken_image, size: 32, color: Color(0xFF6B7280));
+      child = const Icon(
+        Icons.broken_image,
+        size: 32,
+        color: Color(0xFF6B7280),
+      );
     } else {
       child = Image.memory(
         _imageBytes!,

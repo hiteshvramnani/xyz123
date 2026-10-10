@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:native_app/models/submission.dart';
+
 import '../services/storage_service.dart';
 import '../main.dart' as app;
 import '../widgets/date_formatter.dart';
@@ -18,19 +18,15 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Submission> _submissions = [];
   String? _error;
   bool _loading = true;
-  bool _loadingMore = false;
   bool _hasMore = true;
   int _totalPages = 1;
 
-  // Pagination - max 5 submissions per page
   static const int _pageSize = 5;
   int _currentPage = 0;
 
-  // Search
   final TextEditingController _searchCtrl = TextEditingController();
   String _search = '';
 
-  // Filters
   bool _hasImage = false;
   bool _hasVideo = false;
   bool _hasPhoneNumber = false;
@@ -107,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadSubmissions();
   }
 
-    Future<void> _reload() {
+  Future<void> _reload() {
     setState(() {
       _currentPage = 0;
       _hasMore = true;
@@ -127,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _currentPage = 0;
       _submissions.clear();
       _error = null;
-      _loadingMore = false;
     });
     _loadSubmissions();
   }
@@ -144,7 +139,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _currentPage = 0;
       _submissions.clear();
       _error = null;
-      _loadingMore = false;
     });
     _loadSubmissions();
   }
@@ -153,7 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF111827),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => SafeArea(
           child: SingleChildScrollView(
@@ -162,42 +158,99 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Filter by Content', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF9CA3AF))),
+                const Text(
+                  'Filter by Content',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 SwitchListTile(
                   value: _hasTitle,
-                  secondary: const Icon(Icons.title, size: 20, color: Color(0xFF9CA3AF)),
-                  title: const Text('Has Title', style: TextStyle(color: Color(0xFFE5E7EB))),
-                  activeColor: const Color(0xFF2563EB),
-                  onChanged: (v) => setModalState(() => _hasTitle = v),
+                  secondary: const Icon(
+                    Icons.title,
+                    size: 20,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  title: const Text(
+                    'Has Title',
+                    style: TextStyle(color: Color(0xFFE5E7EB)),
+                  ),
+                  activeThumbColor: const Color(0xFF2563EB),
+                  onChanged: (v) {
+                    setModalState(() => _hasTitle = v);
+                    setState(() {});
+                  },
                 ),
                 SwitchListTile(
                   value: _hasImage,
-                  secondary: const Icon(Icons.image, size: 20, color: Color(0xFF9CA3AF)),
-                  title: const Text('Has Photo', style: TextStyle(color: Color(0xFFE5E7EB))),
-                  activeColor: const Color(0xFF2563EB),
-                  onChanged: (v) => setModalState(() => _hasImage = v),
+                  secondary: const Icon(
+                    Icons.image,
+                    size: 20,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  title: const Text(
+                    'Has Photo',
+                    style: TextStyle(color: Color(0xFFE5E7EB)),
+                  ),
+                  activeThumbColor: const Color(0xFF2563EB),
+                  onChanged: (v) {
+                    setModalState(() => _hasImage = v);
+                    setState(() {});
+                  },
                 ),
                 SwitchListTile(
                   value: _hasVideo,
-                  secondary: const Icon(Icons.videocam, size: 20, color: Color(0xFF9CA3AF)),
-                  title: const Text('Has Video', style: TextStyle(color: Color(0xFFE5E7EB))),
-                  activeColor: const Color(0xFF2563EB),
-                  onChanged: (v) => setModalState(() => _hasVideo = v),
+                  secondary: const Icon(
+                    Icons.videocam,
+                    size: 20,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  title: const Text(
+                    'Has Video',
+                    style: TextStyle(color: Color(0xFFE5E7EB)),
+                  ),
+                  activeThumbColor: const Color(0xFF2563EB),
+                  onChanged: (v) {
+                    setModalState(() => _hasVideo = v);
+                    setState(() {});
+                  },
                 ),
                 SwitchListTile(
                   value: _hasPhoneNumber,
-                  secondary: const Icon(Icons.phone, size: 20, color: Color(0xFF9CA3AF)),
-                  title: const Text('Has Phone Number', style: TextStyle(color: Color(0xFFE5E7EB))),
-                  activeColor: const Color(0xFF2563EB),
-                  onChanged: (v) => setModalState(() => _hasPhoneNumber = v),
+                  secondary: const Icon(
+                    Icons.phone,
+                    size: 20,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  title: const Text(
+                    'Has Phone Number',
+                    style: TextStyle(color: Color(0xFFE5E7EB)),
+                  ),
+                  activeThumbColor: const Color(0xFF2563EB),
+                  onChanged: (v) {
+                    setModalState(() => _hasPhoneNumber = v);
+                    setState(() {});
+                  },
                 ),
                 SwitchListTile(
                   value: _hasLocation,
-                  secondary: const Icon(Icons.location_on, size: 20, color: Color(0xFF9CA3AF)),
-                  title: const Text('Has Location', style: TextStyle(color: Color(0xFFE5E7EB))),
-                  activeColor: const Color(0xFF2563EB),
-                  onChanged: (v) => setModalState(() => _hasLocation = v),
+                  secondary: const Icon(
+                    Icons.location_on,
+                    size: 20,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  title: const Text(
+                    'Has Location',
+                    style: TextStyle(color: Color(0xFFE5E7EB)),
+                  ),
+                  activeThumbColor: const Color(0xFF2563EB),
+                  onChanged: (v) {
+                    setModalState(() => _hasLocation = v);
+                    setState(() {});
+                  },
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
@@ -207,7 +260,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.pop(ctx);
                       _reload();
                     },
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                     child: const Text('Apply', style: TextStyle(fontSize: 14)),
                   ),
                 ),
@@ -236,14 +291,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // FIX: Implements uniform callback checks to clear history stack elements cleanly
+  void _handleBackNavigation() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const SubmitScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Data'),
+        title: const Text('Data Log'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).canPop() ? Navigator.pop(context) : null,
+          onPressed: _handleBackNavigation, // Changed cleanly here
         ),
         actions: [
           IconButton(
@@ -255,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (_) => const SubmitScreen()),
               ),
               onNavigateSubmissions: () {},
-              onLock: app.logout,
+              onLock: app.logoutHandler,
             ),
           ),
         ],
@@ -270,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: TextField(
                     controller: _searchCtrl,
                     decoration: InputDecoration(
-                      hintText: 'Search...',
+                      hintText: 'Search packs...',
                       prefixIcon: const Icon(Icons.search, size: 20),
                       suffixIcon: _search.isNotEmpty
                           ? IconButton(
@@ -278,7 +345,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               onPressed: () => _applySearch(''),
                             )
                           : null,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       isDense: true,
                     ),
                     onSubmitted: (value) => _applySearch(value),
@@ -288,7 +358,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                   icon: Icon(
                     Icons.filter_list,
-                    color: _hasFilters ? const Color(0xFF2563EB) : const Color(0xFF9CA3AF),
+                    color: _hasFilters
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF9CA3AF),
                     size: 22,
                   ),
                   onPressed: _showFilterSortSheet,
@@ -296,7 +368,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-
           if (_hasFilters)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -311,15 +382,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(Color(0xFF2563EB)),
+                    ),
+                  )
                 : _error != null
-                    ? _buildError()
-                    : _submissions.isEmpty
-                        ? _buildEmpty()
-                        : _buildList(),
+                ? _buildError()
+                : _submissions.isEmpty
+                ? _buildEmpty()
+                : _buildList(),
           ),
         ],
       ),
@@ -328,79 +402,35 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () => _navigateToSubmit(),
         icon: const Icon(Icons.add),
         label: const Text('New Submission'),
+        backgroundColor: const Color(0xFF2563EB),
       ),
     );
   }
 
   List<Widget> _buildFilterChips() {
     final chips = <Widget>[];
-    if (_search.isNotEmpty) {
-      chips.add(Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: Chip(
-          label: Text('$_search', style: const TextStyle(fontSize: 11)),
-          backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-          visualDensity: VisualDensity.compact,
-        ),
-      ));
-    }
-    if (_hasImage) {
-      chips.add(Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: Chip(
-          label: const Text('Photo', style: TextStyle(fontSize: 11)),
-          backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-          visualDensity: VisualDensity.compact,
-        ),
-      ));
-    }
-    if (_hasVideo) {
-      chips.add(Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: Chip(
-          label: const Text('Video', style: TextStyle(fontSize: 11)),
-          backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-          visualDensity: VisualDensity.compact,
-        ),
-      ));
-    }
-    if (_hasPhoneNumber) {
-      chips.add(Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: Chip(
-          label: const Text('Phone', style: TextStyle(fontSize: 11)),
-          backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-          visualDensity: VisualDensity.compact,
-        ),
-      ));
-    }
-    if (_hasLocation) {
-      chips.add(Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: Chip(
-          label: const Text('Location', style: TextStyle(fontSize: 11)),
-          backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-          visualDensity: VisualDensity.compact,
-        ),
-      ));
-    }
-    if (_hasTitle) {
-      chips.add(Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: Chip(
-          label: const Text('Title', style: TextStyle(fontSize: 11)),
-          backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
-          visualDensity: VisualDensity.compact,
-        ),
-      ));
-    }
-    return chips;
+
+    Chip chip(String label) => Chip(
+      label: Text(label, style: const TextStyle(fontSize: 11)),
+      backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
+      visualDensity: VisualDensity.compact,
+    );
+
+    if (_search.isNotEmpty) chips.add(chip(_search));
+    if (_hasImage) chips.add(chip('Photo'));
+    if (_hasVideo) chips.add(chip('Video'));
+    if (_hasPhoneNumber) chips.add(chip('Phone'));
+    if (_hasLocation) chips.add(chip('Location'));
+    if (_hasTitle) chips.add(chip('Title'));
+
+    return chips
+        .map((c) => Padding(padding: const EdgeInsets.only(right: 6), child: c))
+        .toList();
   }
 
-    Widget? _buildPagination() {
+  Widget? _buildPagination() {
     if (_totalPages <= 1) return null;
 
-    // Show a window of up to 5 page numbers around the current page
     var start = _currentPage - 2;
     if (start < 0) start = 0;
     var end = start + 4;
@@ -422,7 +452,6 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.chevron_left),
-              tooltip: 'Previous',
               onPressed: (_currentPage > 0 && !_loading)
                   ? () => _goToPage(_currentPage - 1)
                   : null,
@@ -434,8 +463,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(38, 38),
-                    backgroundColor:
-                        i == _currentPage ? const Color(0xFF2563EB) : null,
+                    backgroundColor: i == _currentPage
+                        ? const Color(0xFF2563EB)
+                        : null,
                     foregroundColor: i == _currentPage
                         ? Colors.white
                         : const Color(0xFF9CA3AF),
@@ -446,7 +476,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             IconButton(
               icon: const Icon(Icons.chevron_right),
-              tooltip: 'Next',
               onPressed: (_currentPage < _totalPages - 1 && !_loading)
                   ? () => _goToPage(_currentPage + 1)
                   : null,
@@ -469,9 +498,15 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+                ),
               ),
-              child: Text(_error!, style: const TextStyle(color: Color(0xFFFCA5A5)), textAlign: TextAlign.center),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: Color(0xFFFCA5A5)),
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -490,7 +525,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_upload_outlined, size: 48, color: Color(0xFF6B7280)),
+          const Icon(
+            Icons.cloud_upload_outlined,
+            size: 48,
+            color: Color(0xFF6B7280),
+          ),
           const SizedBox(height: 8),
           Text(
             _hasFilters ? 'No matching submissions' : 'No submissions yet',
@@ -504,10 +543,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildList() {
     return RefreshIndicator(
       onRefresh: _reload,
+      color: const Color(0xFF2563EB),
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
         itemCount: _submissions.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final s = _submissions[index];
           return Card(
@@ -516,7 +556,10 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
               title: Text(
                 s.what?.isNotEmpty == true ? s.what! : '[No title]',
                 maxLines: 2,
@@ -531,10 +574,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (s.mediaCount > 0) ...[
-                    const Icon(Icons.attach_file, size: 16, color: Color(0xFF6B7280)),
+                    const Icon(
+                      Icons.attach_file,
+                      size: 16,
+                      color: Color(0xFF6B7280),
+                    ),
                     const SizedBox(width: 4),
-                    Text('${s.mediaCount}', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                    Text(
+                      '${s.mediaCount}',
+                      style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right, color: Color(0xFF6B7280)),
                 ],
               ),
               onTap: () => _navigateToDetail(s.id),
