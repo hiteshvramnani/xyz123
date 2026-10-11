@@ -5,7 +5,7 @@ import 'package:mime/mime.dart';
 import '../main.dart' as app;
 import '../theme/theme.dart';
 import '../widgets/ui/ui.dart';
-import 'home_screen.dart';
+import 'submission_list.dart';
 import 'submit_screen.dart';
 
 class UploadingScreen extends StatefulWidget {
@@ -118,7 +118,7 @@ class _UploadingScreenState extends State<UploadingScreen> {
             label: 'View My Submissions',
             onPressed: () {
               Navigator.of(ctx).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                MaterialPageRoute(builder: (_) => const SubmissionList()),
                 (route) => false,
               );
             },

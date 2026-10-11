@@ -10,7 +10,7 @@ import '../widgets/part_card.dart';
 import '../widgets/media_item_data.dart';
 import '../widgets/ui/ui.dart';
 import '../main.dart' as app;
-import 'home_screen.dart';
+import 'submission_list.dart';
 import 'media_viewer.dart';
 import 'submit_screen.dart';
 
@@ -319,7 +319,7 @@ class _SubmissionDetailScreenState extends State<SubmissionDetailScreen> {
         ),
         onNavigateSubmissions: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const SubmissionList()),
         ),
         onLock: app.logoutHandler,
       );

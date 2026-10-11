@@ -11,7 +11,7 @@ import '../widgets/date_formatter.dart';
 import '../widgets/ui/ui.dart';
 import '../widgets/map_picker.dart';
 import 'uploading_screen.dart';
-import 'home_screen.dart';
+import 'submission_list.dart';
 
 class SubmitScreen extends StatefulWidget {
   const SubmitScreen({super.key});
@@ -227,7 +227,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
               context,
               onNavigateSubmissions: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                MaterialPageRoute(builder: (_) => const SubmissionList()),
               ),
               onLock: app.logoutHandler,
             ),

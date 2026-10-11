@@ -9,14 +9,14 @@ import '../widgets/ui/ui.dart';
 import 'submission_detail.dart';
 import 'submit_screen.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class SubmissionList extends StatefulWidget {
+  const SubmissionList({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<SubmissionList> createState() => _SubmissionListState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _SubmissionListState extends State<SubmissionList> {
   List<Submission> _submissions = [];
   String? _error;
   bool _loading = true;
