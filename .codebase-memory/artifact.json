@@ -1,11 +1,12 @@
 {
     "schema_version": 2,
-    "commit": "4e86c16aad3f7b461260f58dcb9469a210549de9",
-    "indexed_at": "2026-10-11T10:02:38Z",
+    "commit": "ba109c07a1b36cbf0fbd375f8e29bb0b2adf165a",
+    "indexed_at": "2026-10-11T10:54:01Z",
     "project": "Users-hiteshramnani-Documents-Portal-copy",
     "nodes": 811,
     "edges": 2232,
     "original_size": 4915200,
-    "compressed_size": 626637,
-    "compression_level": 3
+    "compressed_size": 628603,
+    "compression_level": 3,
+    "reconcile_basis": "git-clean-head"
 }
