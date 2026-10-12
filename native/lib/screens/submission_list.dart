@@ -35,8 +35,6 @@ class _SubmissionListState extends State<SubmissionList> {
   bool _hasLocation = false;
   bool _hasTitle = false;
 
-  final ScrollController _scrollCtrl = ScrollController();
-
   bool get _hasFilters =>
       _search.isNotEmpty ||
       _hasImage ||
@@ -49,22 +47,24 @@ class _SubmissionListState extends State<SubmissionList> {
   void initState() {
     super.initState();
     _loadSubmissions();
-    _scrollCtrl.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _scrollCtrl.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!_hasMore || _loadingMore || _loading) return;
-    if (_scrollCtrl.position.pixels >=
-        _scrollCtrl.position.maxScrollExtent - 200) {
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollEndNotification &&
+        notification.metrics.atEdge &&
+        !notification.metrics.reverseDirection &&
+        _hasMore &&
+        !_loadingMore &&
+        !_loading) {
       _fetchNextPage();
     }
+    return false;
   }
 
   Future<void> _loadSubmissions() async {
@@ -463,12 +463,13 @@ class _SubmissionListState extends State<SubmissionList> {
 
   Widget _buildList() {
     final c = context.colors;
-    return RefreshIndicator(
-      onRefresh: _reload,
-      child: ListView.builder(
-        controller: _scrollCtrl,
-        itemCount: _submissions.length + 1,
-        itemBuilder: (context, index) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScrollNotification,
+      child: RefreshIndicator(
+        onRefresh: _reload,
+        child: ListView.builder(
+          itemCount: _submissions.length + 1,
+          itemBuilder: (context, index) {
           if (index == _submissions.length) {
             return _buildFooter();
           }
@@ -542,7 +543,8 @@ class _SubmissionListState extends State<SubmissionList> {
           );
         },
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildFooter() {

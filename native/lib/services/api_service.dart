@@ -152,7 +152,8 @@ class ApiService {
     final queryString = params.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}').join('&');
     final result = await _request('/api/v1/evidence/my-submissions?$queryString');
 
-    // Normalize response: the server returns { data: [...], pagination: { hasMore, nextCursor } }
+    // Server returns { data: [...], pagination: { hasMore, nextCursor } }
+    // Wrap array in { submissions: [...] } for caller compatibility
     final rawList = (result['data'] is List) ? (result['data'] as List<dynamic>) : [];
     final pag = result['pagination'] as Map<String, dynamic>?;
 
