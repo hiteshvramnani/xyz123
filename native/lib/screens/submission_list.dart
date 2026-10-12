@@ -433,33 +433,80 @@ class _SubmissionListState extends State<SubmissionList> {
     );
   }
 
-  List<Widget> _buildFilterChips() {
+  Widget _filterChip({
+    required String label,
+    required VoidCallback onTap,
+  }) {
     final c = context.colors;
-    final chips = <Widget>[];
-
-    Widget chip(String label) => Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 5,
-      ),
-      decoration: BoxDecoration(
-        color: c.primarySubtle,
-        borderRadius: AppRadii.brSm,
-        border: Border.all(color: c.primary.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall
-            ?.copyWith(color: c.accent, letterSpacing: 0),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 5,
+        ),
+        decoration: BoxDecoration(
+          color: c.primarySubtle,
+          borderRadius: AppRadii.brSm,
+          border: Border.all(color: c.primary.withValues(alpha: 0.3)),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall
+              ?.copyWith(color: c.accent, letterSpacing: 0),
+        ),
       ),
     );
+  }
 
-    if (_search.isNotEmpty) chips.add(chip(_search));
-    if (_hasImage) chips.add(chip('Photo'));
-    if (_hasVideo) chips.add(chip('Video'));
-    if (_hasPhoneNumber) chips.add(chip('Phone'));
-    if (_hasLocation) chips.add(chip('Location'));
-    if (_hasTitle) chips.add(chip('Title'));
+  List<Widget> _buildFilterChips() {
+    final chips = <Widget>[];
+
+    if (_search.isNotEmpty)
+      chips.add(_filterChip(
+        label: _search,
+        onTap: () => _applySearch(''),
+      ));
+    if (_hasImage)
+      chips.add(_filterChip(
+        label: 'Photo',
+        onTap: () {
+          setState(() => _hasImage = false);
+          _reload();
+        },
+      ));
+    if (_hasVideo)
+      chips.add(_filterChip(
+        label: 'Video',
+        onTap: () {
+          setState(() => _hasVideo = false);
+          _reload();
+        },
+      ));
+    if (_hasPhoneNumber)
+      chips.add(_filterChip(
+        label: 'Phone',
+        onTap: () {
+          setState(() => _hasPhoneNumber = false);
+          _reload();
+        },
+      ));
+    if (_hasLocation)
+      chips.add(_filterChip(
+        label: 'Location',
+        onTap: () {
+          setState(() => _hasLocation = false);
+          _reload();
+        },
+      ));
+    if (_hasTitle)
+      chips.add(_filterChip(
+        label: 'Title',
+        onTap: () {
+          setState(() => _hasTitle = false);
+          _reload();
+        },
+      ));
 
     return chips;
   }
