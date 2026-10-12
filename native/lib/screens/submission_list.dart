@@ -57,8 +57,7 @@ class _SubmissionListState extends State<SubmissionList> {
 
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification is ScrollEndNotification &&
-        notification.metrics.atEdge &&
-        !notification.metrics.reverseDirection &&
+        notification.metrics.extentAfter <= 0 &&
         _hasMore &&
         !_loadingMore &&
         !_loading) {
@@ -389,6 +388,7 @@ class _SubmissionListState extends State<SubmissionList> {
                         ? _buildEmpty()
                         : _buildList(),
           ),
+          _buildFooterAlwaysVisible(),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -467,25 +467,16 @@ class _SubmissionListState extends State<SubmissionList> {
       onNotification: _onScrollNotification,
       child: RefreshIndicator(
         onRefresh: _reload,
-        child: ListView.builder(
-          itemCount: _submissions.length + 1,
+        child: ListView.separated(
+          itemCount: _submissions.length,
+          separatorBuilder: (_, __) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Divider(height: 1, color: c.outline),
+          ),
           itemBuilder: (context, index) {
-          if (index == _submissions.length) {
-            return _buildFooter();
-          }
-
-          final s = _submissions[index];
-          final hasTitle = s.what?.isNotEmpty == true;
-          return Column(
-            children: [
-              if (index > 0)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                  ),
-                  child: Divider(height: 1, color: c.outline),
-                ),
-              InkWell(
+            final s = _submissions[index];
+            final hasTitle = s.what?.isNotEmpty == true;
+            return InkWell(
                 onTap: () => _navigateToDetail(s.id),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -547,10 +538,21 @@ class _SubmissionListState extends State<SubmissionList> {
   );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooterAlwaysVisible() {
+    if (!_hasMore && !_loadingMore) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: Text(
+          'You\'ve seen all ${_submissions.length} submission${_submissions.length == 1 ? '' : 's'}',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      );
+    }
+
     if (_loadingMore) {
       return const Padding(
-        padding: EdgeInsets.all(AppSpacing.lg),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Center(
           child: SizedBox(
             height: AppIconSize.md,
@@ -561,17 +563,14 @@ class _SubmissionListState extends State<SubmissionList> {
       );
     }
 
-    if (!_hasMore && _submissions.isNotEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Text(
-          'You\'ve seen all ${_submissions.length} submission${_submissions.length == 1 ? '' : 's'}',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Text(
+        'Scroll down to load more',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    );
   }
+
 }
