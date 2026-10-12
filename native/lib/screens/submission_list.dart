@@ -194,8 +194,7 @@ class _SubmissionListState extends State<SubmissionList> {
             return SwitchListTile(
               value: value,
               secondary: Icon(icon, size: AppIconSize.md),
-              title: Text(label,
-                  style: Theme.of(context).textTheme.bodyLarge),
+              title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
               contentPadding: EdgeInsets.zero,
               onChanged: (v) {
                 setModalState(() => onChanged(v));
@@ -210,19 +209,41 @@ class _SubmissionListState extends State<SubmissionList> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Filter by content',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Filter by content',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 AppSpacing.gapSm,
-                filterSwitch('Has title', Icons.title, _hasTitle,
-                    (v) => _hasTitle = v),
-                filterSwitch('Has photo', Icons.image_outlined, _hasImage,
-                    (v) => _hasImage = v),
-                filterSwitch('Has video', Icons.videocam_outlined, _hasVideo,
-                    (v) => _hasVideo = v),
-                filterSwitch('Has phone number', Icons.phone_outlined,
-                    _hasPhoneNumber, (v) => _hasPhoneNumber = v),
-                filterSwitch('Has location', Icons.location_on_outlined,
-                    _hasLocation, (v) => _hasLocation = v),
+                filterSwitch(
+                  'Has title',
+                  Icons.title,
+                  _hasTitle,
+                  (v) => _hasTitle = v,
+                ),
+                filterSwitch(
+                  'Has photo',
+                  Icons.image_outlined,
+                  _hasImage,
+                  (v) => _hasImage = v,
+                ),
+                filterSwitch(
+                  'Has video',
+                  Icons.videocam_outlined,
+                  _hasVideo,
+                  (v) => _hasVideo = v,
+                ),
+                filterSwitch(
+                  'Has phone number',
+                  Icons.phone_outlined,
+                  _hasPhoneNumber,
+                  (v) => _hasPhoneNumber = v,
+                ),
+                filterSwitch(
+                  'Has location',
+                  Icons.location_on_outlined,
+                  _hasLocation,
+                  (v) => _hasLocation = v,
+                ),
                 AppSpacing.gapMd,
                 PrimaryButton(
                   label: 'Apply',
@@ -309,12 +330,16 @@ class _SubmissionListState extends State<SubmissionList> {
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       hintText: 'Search submissions',
-                      prefixIcon:
-                          const Icon(Icons.search, size: AppIconSize.md),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: AppIconSize.md,
+                      ),
                       suffixIcon: _search.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear,
-                                  size: AppIconSize.md),
+                              icon: const Icon(
+                                Icons.clear,
+                                size: AppIconSize.md,
+                              ),
                               tooltip: 'Clear search',
                               onPressed: () => _applySearch(''),
                             )
@@ -379,16 +404,25 @@ class _SubmissionListState extends State<SubmissionList> {
               ),
             ),
           ],
-          Expanded(
-            child: _loading
-                ? const LoadingView()
-                : _error != null
-                    ? _buildError()
-                    : _submissions.isEmpty
-                        ? _buildEmpty()
-                        : _buildList(),
-          ),
-          _buildFooterAlwaysVisible(),
+          if (_loading)
+            const Expanded(
+              child: LoadingView(),
+            ),
+          if (!_loading && _error != null)
+            Expanded(child: _buildError()),
+          if (!_loading && _error == null && _submissions.isEmpty)
+            Expanded(
+              child: EmptyState(
+                message: _hasFilters ? 'No matching submissions' : 'No submissions yet',
+                detail: _hasFilters
+                    ? 'Try adjusting or clearing your filters.'
+                    : 'Tap "New Submission" to create your first one.',
+              ),
+            ),
+          if (!_loading && _error == null && _submissions.isNotEmpty)
+            Expanded(
+              child: _buildScrollWithFooter(),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -404,23 +438,21 @@ class _SubmissionListState extends State<SubmissionList> {
     final chips = <Widget>[];
 
     Widget chip(String label) => Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: 5,
-          ),
-          decoration: BoxDecoration(
-            color: c.primarySubtle,
-            borderRadius: AppRadii.brSm,
-            border: Border.all(color: c.primary.withValues(alpha: 0.3)),
-          ),
-          child: Text(
-            label,
-            style: Theme.of(context)
-                .textTheme
-                .labelSmall
-                ?.copyWith(color: c.accent, letterSpacing: 0),
-          ),
-        );
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: c.primarySubtle,
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: c.primary.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall
+            ?.copyWith(color: c.accent, letterSpacing: 0),
+      ),
+    );
 
     if (_search.isNotEmpty) chips.add(chip(_search));
     if (_hasImage) chips.add(chip('Photo'));
@@ -463,20 +495,20 @@ class _SubmissionListState extends State<SubmissionList> {
 
   Widget _buildList() {
     final c = context.colors;
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onScrollNotification,
-      child: RefreshIndicator(
-        onRefresh: _reload,
-        child: ListView.separated(
-          itemCount: _submissions.length,
-          separatorBuilder: (_, __) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Divider(height: 1, color: c.outline),
-          ),
-          itemBuilder: (context, index) {
-            final s = _submissions[index];
-            final hasTitle = s.what?.isNotEmpty == true;
-            return InkWell(
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          sliver: SliverList.separated(
+            itemCount: _submissions.length,
+            separatorBuilder: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Divider(height: 1, color: c.outline),
+            ),
+            itemBuilder: (context, index) {
+              final s = _submissions[index];
+              final hasTitle = s.what?.isNotEmpty == true;
+              return InkWell(
                 onTap: () => _navigateToDetail(s.id),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -494,15 +526,15 @@ class _SubmissionListState extends State<SubmissionList> {
                               hasTitle ? s.what! : 'Untitled submission',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style:
-                                  Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                        color: hasTitle
-                                            ? c.textPrimary
-                                            : c.textTertiary,
-                                        fontStyle: hasTitle
-                                            ? FontStyle.normal
-                                            : FontStyle.italic,
-                                      ),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color: hasTitle
+                                        ? c.textPrimary
+                                        : c.textTertiary,
+                                    fontStyle: hasTitle
+                                        ? FontStyle.normal
+                                        : FontStyle.italic,
+                                  ),
                             ),
                             const SizedBox(height: AppSpacing.xs),
                             Text(
@@ -516,23 +548,46 @@ class _SubmissionListState extends State<SubmissionList> {
                         ),
                       ),
                       if (s.mediaCount > 0) ...[
-                        Icon(Icons.attach_file,
-                            size: AppIconSize.sm, color: c.textTertiary),
+                        Icon(
+                          Icons.attach_file,
+                          size: AppIconSize.sm,
+                          color: c.textTertiary,
+                        ),
                         const SizedBox(width: AppSpacing.xs),
-                        Text('${s.mediaCount}',
-                            style: context.mono(
-                                fontSize: 12, color: c.textTertiary)),
+                        Text(
+                          '${s.mediaCount}',
+                          style: context.mono(
+                            fontSize: 12,
+                            color: c.textTertiary,
+                          ),
+                        ),
                         AppSpacing.gapHMd,
                       ],
-                      Icon(Icons.chevron_right,
-                          size: AppIconSize.md, color: c.textTertiary),
+                      Icon(
+                        Icons.chevron_right,
+                        size: AppIconSize.md,
+                        color: c.textTertiary,
+                      ),
                     ],
                   ),
                 ),
-              ),
+              );
             },
           ),
         ),
+        SliverToBoxAdapter(
+          child: _buildFooterAlwaysVisible(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScrollWithFooter() {
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScrollNotification,
+      child: RefreshIndicator(
+        onRefresh: _reload,
+        child: _buildList(),
       ),
     );
   }
@@ -571,5 +626,4 @@ class _SubmissionListState extends State<SubmissionList> {
       ),
     );
   }
-
 }
