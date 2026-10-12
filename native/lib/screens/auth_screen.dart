@@ -93,6 +93,11 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
     _inactivityTimer?.cancel();
     _resumeDelayTimer?.cancel();
     if (!mounted) return;
+
+    // Pop any pushed screens (submission list, detail) so the lock
+    // screen is not hidden behind them.
+    Navigator.of(context).popUntil(ModalRoute.withName('/'));
+
     setState(() {
       _authenticated = false;
       _biometricShowing = false;
