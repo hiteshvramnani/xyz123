@@ -530,12 +530,11 @@ class _SubmissionListState extends State<SubmissionList> {
                   ),
                 ),
               ),
-            ],
-          );
-        },
+            },
+          ),
+        ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildFooterAlwaysVisible() {
