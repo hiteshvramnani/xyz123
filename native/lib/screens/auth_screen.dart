@@ -3,21 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 
-import '../main.dart'; // Imports the global variables without naming collisions
+import '../main.dart';
+import '../services/storage_service.dart';
 import '../theme/theme.dart';
 import '../widgets/ui/ui.dart';
 
-typedef ActivityCallback = void Function();
-
 class AuthScreen extends StatefulWidget {
   final Widget child;
-  final void Function()? onLogout;
-  final ActivityCallback? onActivity;
+  final VoidCallback? onActivity;
 
   const AuthScreen({
     super.key,
     required this.child,
-    this.onLogout,
     this.onActivity,
   });
 
@@ -28,18 +25,23 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   final _auth = LocalAuthentication();
   bool _authenticated = false;
-  bool _cancelled = false;
-  String? _error;
+  bool _biometricShowing = false;
   bool _wasPaused = false;
   Timer? _inactivityTimer;
+  Timer? _resumeDelayTimer;
 
   static const _inactivityTimeout = Duration(minutes: 3);
+
+  /// Delay before showing biometric on app resume so the phone's own
+  /// lock-screen unlock cycle finishes first and the two prompts don't overlap.
+  static const _resumeDelay = Duration(milliseconds: 1000);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    logoutHandler = logout; // Safely sets the global lock tracker callback
+    logoutHandler = _lockApp;
+    fullLogoutHandler = _performLogout;
     _authenticate();
   }
 
@@ -47,6 +49,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _inactivityTimer?.cancel();
+    _resumeDelayTimer?.cancel();
     super.dispose();
   }
 
@@ -54,20 +57,29 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    // Stop evaluation if the OS biometric window is on top
     if (isSystemAuthPromptActive) return;
 
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _wasPaused = _authenticated;
       _inactivityTimer?.cancel();
+      _resumeDelayTimer?.cancel();
       return;
     }
 
     if (state == AppLifecycleState.resumed && _wasPaused) {
       _wasPaused = false;
-      _lockApp();
+      _scheduleLockOnResume();
     }
+  }
+
+  void _scheduleLockOnResume() {
+    _resumeDelayTimer?.cancel();
+    _resumeDelayTimer = Timer(_resumeDelay, () {
+      if (mounted) {
+        _lockApp();
+      }
+    });
   }
 
   void _resetInactivityTimer() {
@@ -79,29 +91,30 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
 
   void _lockApp() {
     _inactivityTimer?.cancel();
-    if (mounted) {
-      setState(() {
-        _authenticated = false;
-        _cancelled = false;
-        _error = null;
-      });
-      _authenticate();
-    }
+    _resumeDelayTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _authenticated = false;
+      _biometricShowing = false;
+    });
+    _authenticate();
   }
 
-  void logout() {
+  /// Clears the stored browser ID (breaking linkage to past submissions) and
+  /// drops the user back to the biometric gate.
+  Future<void> _performLogout() async {
+    await StorageService.clearBrowserId();
+    if (!mounted) return;
     _lockApp();
   }
 
   Future<void> _authenticate() async {
     if (!mounted) return;
     setState(() {
-      _cancelled = false;
-      _error = null;
+      _biometricShowing = true;
     });
 
     try {
-      // Toggle the global state variable
       isSystemAuthPromptActive = true;
 
       final didAuthenticate = await _auth.authenticate(
@@ -115,42 +128,41 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
 
       isSystemAuthPromptActive = false;
 
-      if (mounted) {
+      if (!mounted) return;
+
+      if (didAuthenticate) {
         setState(() {
-          if (didAuthenticate) {
-            _authenticated = true;
-            _cancelled = false;
-            _resetInactivityTimer();
-          } else {
-            _cancelled = true;
-          }
+          _authenticated = true;
+          _biometricShowing = false;
+        });
+        _resetInactivityTimer();
+      } else {
+        // User cancelled — stay on lock screen, clear the spinner.
+        setState(() {
+          _biometricShowing = false;
         });
       }
-    } on Exception catch (e) {
+    } on Exception {
       isSystemAuthPromptActive = false;
-      if (mounted) {
-        setState(() {
-          _error =
-              'Authentication failed: ${e.toString().replaceAll('Exception: ', '')}';
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _biometricShowing = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        if (_authenticated) _buildAuthenticatedContent(),
-        if (!_authenticated) Positioned.fill(child: _buildLockScreen()),
-      ],
-    );
+    if (_authenticated) {
+      return _buildAuthenticatedContent();
+    }
+    return _buildLockScreen();
   }
 
   Widget _buildAuthenticatedContent() {
     return Listener(
       onPointerDown: (_) => _onActivity(),
-      onPointerSignal: (event) => _onActivity(),
+      onPointerSignal: (_) => _onActivity(),
       behavior: HitTestBehavior.opaque,
       child: widget.child,
     );
@@ -217,26 +229,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                       AppSpacing.gapLg,
                       Divider(height: 1, color: c.outline),
                       AppSpacing.gapLg,
-                      if (_error != null) ...[
-                        StatusBanner(message: _error!),
-                        AppSpacing.gapLg,
-                        PrimaryButton(
-                          label: 'Try again',
-                          icon: Icons.fingerprint,
-                          onPressed: _authenticate,
-                        ),
-                      ] else if (_cancelled) ...[
-                        Text(
-                          'Your session is locked.',
-                          style: textTheme.bodyMedium,
-                        ),
-                        AppSpacing.gapLg,
-                        PrimaryButton(
-                          label: 'Unlock',
-                          icon: Icons.fingerprint,
-                          onPressed: _authenticate,
-                        ),
-                      ] else
+                      if (_biometricShowing) ...[
                         Row(
                           children: [
                             const SizedBox(
@@ -251,6 +244,13 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                             ),
                           ],
                         ),
+                      ] else ...[
+                        PrimaryButton(
+                          label: 'Unlock',
+                          icon: Icons.fingerprint,
+                          onPressed: _authenticate,
+                        ),
+                      ],
                     ],
                   ),
                 ),

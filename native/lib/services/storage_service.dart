@@ -13,4 +13,9 @@ class StorageService {
     }
     return id;
   }
+
+  static Future<void> clearBrowserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_browserIdKey);
+  }
 }

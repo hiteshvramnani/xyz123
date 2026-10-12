@@ -12,6 +12,7 @@ late final ApiService apiService;
 
 /// Global state handlers accessible by child screens
 void Function() logoutHandler = () {};
+void Function() fullLogoutHandler = () {};
 bool isSystemAuthPromptActive = false;
 
 /// Shows the shared overflow menu as a themed options sheet. Kept as a single
