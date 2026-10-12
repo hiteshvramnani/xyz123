@@ -235,6 +235,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
         ],
       ),
       body: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: AppSpacing.screen,
         children: [
           AppTextField(
