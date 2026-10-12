@@ -1,6 +1,7 @@
 import prisma from '../../db/client';
 import { AppError } from '../../middleware/error-handler';
 import { s3Service } from '../../services/s3.service';
+import { decodeCursor, encodeCursor } from '../../utils/pagination';
 import { SubmitEvidenceInput, EvidenceFileInput } from './evidence.schemas';
 
 export async function submitEvidence(input: SubmitEvidenceInput & { phoneNumber?: string; manualLocation?: string; phoneNumbers?: string[]; locations?: string[] }, files: EvidenceFileInput[]) {
@@ -128,14 +129,15 @@ export async function updateSubmissionTitle(submissionId: string, title: string)
   });
 }
 
-export async function listMySubmissions(browserId: string, query?: { q?: string; hasImage?: boolean; hasVideo?: boolean; hasPhoneNumber?: boolean; hasLocation?: boolean; hasTitle?: boolean; page?: number; limit?: number }) {
+export async function listMySubmissions(browserId: string, query?: { q?: string; hasImage?: boolean; hasVideo?: boolean; hasPhoneNumber?: boolean; hasLocation?: boolean; hasTitle?: boolean; cursor?: string; limit?: number }) {
   const trail = await prisma.trail.findFirst({ where: { slug: 'evidence' } });
   if (!trail) {
-    return { data: [], pagination: { page: 1, totalPages: 0, total: 0, hasMore: false } };
+    return { data: [], pagination: { hasMore: false } };
   }
 
-  const { q, hasImage, hasVideo, hasPhoneNumber, hasLocation, hasTitle, page = 1, limit = 20 } = query || {};
+  const { q, hasImage, hasVideo, hasPhoneNumber, hasLocation, hasTitle, cursor, limit = 20 } = query || {};
 
+  const fetchLimit = limit + 1;
   const binds: (string | Date | number)[] = [];
   const wheres: string[] = [];
   let idx = 1;
@@ -169,21 +171,13 @@ export async function listMySubmissions(browserId: string, query?: { q?: string;
     wheres.push(`(s."what" IS NOT NULL AND s."what" != '')`);
   }
 
-    // 1. Get the total matching count for pagination boundaries
-  const countSql = `
-    SELECT COUNT(*)::int as total FROM "submissions" s
-    WHERE ${wheres.join(' AND ')}
-  `;
-  const countResults = await prisma.$queryRawUnsafe<{ total: number }[]>(countSql, ...binds);
-  const total = Number(countResults?.[0]?.total ?? 0);
+  if (cursor) {
+    const cursorId = decodeCursor(cursor);
+    wheres.push(`s."id"::text < ${bind(cursorId)}`);
+  }
 
-  // 2. Clone the binds array to dynamically separate list tokens from count tokens
-  const queryBinds = [...binds];
-
-  // 3. Increment parameter tokens based on the current idx track location
+  binds.push(fetchLimit);
   const limitIdx = idx;
-  const offsetIdx = idx + 1;
-  queryBinds.push(limit, (page - 1) * limit);
 
   const sql = `
     SELECT s.id, s."what", s."where_field" as "whereField", s."when_field" as "whenField",
@@ -193,24 +187,21 @@ export async function listMySubmissions(browserId: string, query?: { q?: string;
     FROM "submissions" s
     WHERE ${wheres.join(' AND ')}
     ORDER BY s."createdAt" DESC
-    LIMIT $${limitIdx} OFFSET $${offsetIdx}
+    LIMIT $${limitIdx}
   `;
 
-  // 4. Execute the targeted selection using the custom boundary parameter block
-  const results = await prisma.$queryRawUnsafe<any[]>(sql, ...queryBinds);
+  const results = await prisma.$queryRawUnsafe<any[]>(sql, ...binds);
 
-
-
-  console.log('[listMySubmissions] found', results.length, 'of', total, 'submissions (page', page, ')');
-
-  const totalPages = Math.ceil(total / limit);
+  const hasMore = results.length > limit;
+  const pagedResults = hasMore ? results.slice(0, limit) : results;
+  const nextCursor = hasMore ? encodeCursor(pagedResults[pagedResults.length - 1].id) : undefined;
 
   return {
-    data: results.map((r) => ({
+    data: pagedResults.map((r) => ({
       ...r,
       metadata: r.metadata ?? {},
     })),
-    pagination: { page, totalPages, total, hasMore: page < totalPages },
+    pagination: { hasMore, nextCursor },
   };
 }
 

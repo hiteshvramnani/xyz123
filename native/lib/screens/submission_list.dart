@@ -20,10 +20,11 @@ class _SubmissionListState extends State<SubmissionList> {
   List<Submission> _submissions = [];
   String? _error;
   bool _loading = true;
-  int _totalPages = 1;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  String? _cursor;
 
   static const int _pageSize = 5;
-  int _currentPage = 0;
 
   final TextEditingController _searchCtrl = TextEditingController();
   String _search = '';
@@ -33,6 +34,8 @@ class _SubmissionListState extends State<SubmissionList> {
   bool _hasPhoneNumber = false;
   bool _hasLocation = false;
   bool _hasTitle = false;
+
+  final ScrollController _scrollCtrl = ScrollController();
 
   bool get _hasFilters =>
       _search.isNotEmpty ||
@@ -46,12 +49,22 @@ class _SubmissionListState extends State<SubmissionList> {
   void initState() {
     super.initState();
     _loadSubmissions();
+    _scrollCtrl.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_hasMore || _loadingMore || _loading) return;
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 200) {
+      _fetchNextPage();
+    }
   }
 
   Future<void> _loadSubmissions() async {
@@ -62,28 +75,11 @@ class _SubmissionListState extends State<SubmissionList> {
 
     try {
       final browserId = await StorageService.getBrowserId();
-      final result = await app.apiService.listMySubmissionsWithPagination(
-        browserId,
-        q: _search,
-        hasImage: _hasImage,
-        hasVideo: _hasVideo,
-        hasPhoneNumber: _hasPhoneNumber,
-        hasLocation: _hasLocation,
-        hasTitle: _hasTitle,
-        page: _currentPage + 1,
-        limit: _pageSize,
-      );
-
-      final resultData = result['data'] as Map<String, dynamic>;
-      final rawList = (resultData['submissions'] as List<dynamic>?) ?? [];
-      final pag = result['pagination'] as Map<String, dynamic>?;
-      final totalPages = (pag?['totalPages'] as num?)?.toInt() ?? 1;
+      final result = await _callApi(browserId, cursor: null);
 
       setState(() {
-        _submissions = rawList
-            .map((json) => Submission.fromJson(json as Map<String, dynamic>))
-            .toList();
-        _totalPages = totalPages < 1 ? 1 : totalPages;
+        _submissions = _parseSubmissions(result);
+        _updateCursor(result);
         _loading = false;
       });
     } catch (e, st) {
@@ -95,17 +91,58 @@ class _SubmissionListState extends State<SubmissionList> {
     }
   }
 
-  void _goToPage(int page) {
-    if (_loading || page < 0 || page >= _totalPages || page == _currentPage) {
-      return;
+  Future<void> _fetchNextPage() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+
+    try {
+      final browserId = await StorageService.getBrowserId();
+      final result = await _callApi(browserId, cursor: _cursor);
+
+      if (!mounted) return;
+      setState(() {
+        _submissions.addAll(_parseSubmissions(result));
+        _updateCursor(result);
+        _loadingMore = false;
+      });
+    } catch (e, st) {
+      debugPrint('FETCH NEXT ERROR: $e\n$st');
+      if (mounted) setState(() => _loadingMore = false);
     }
-    setState(() => _currentPage = page);
-    _loadSubmissions();
+  }
+
+  Future<Map<String, dynamic>> _callApi(String browserId, {String? cursor}) {
+    return app.apiService.listMySubmissions(
+      browserId,
+      q: _search,
+      hasImage: _hasImage,
+      hasVideo: _hasVideo,
+      hasPhoneNumber: _hasPhoneNumber,
+      hasLocation: _hasLocation,
+      hasTitle: _hasTitle,
+      cursor: cursor,
+      limit: _pageSize,
+    );
+  }
+
+  List<Submission> _parseSubmissions(Map<String, dynamic> result) {
+    final resultData = result['data'] as Map<String, dynamic>;
+    final rawList = (resultData['submissions'] as List<dynamic>?) ?? [];
+    return rawList
+        .map((json) => Submission.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  void _updateCursor(Map<String, dynamic> result) {
+    final pag = result['pagination'] as Map<String, dynamic>?;
+    _cursor = pag?['nextCursor'] as String?;
+    _hasMore = (pag?['hasMore'] as bool?) ?? false;
   }
 
   Future<void> _reload() {
     setState(() {
-      _currentPage = 0;
+      _cursor = null;
+      _hasMore = true;
       _submissions.clear();
     });
     return _loadSubmissions();
@@ -119,7 +156,8 @@ class _SubmissionListState extends State<SubmissionList> {
       _hasPhoneNumber = false;
       _hasLocation = false;
       _hasTitle = false;
-      _currentPage = 0;
+      _cursor = null;
+      _hasMore = true;
       _submissions.clear();
       _error = null;
     });
@@ -135,7 +173,8 @@ class _SubmissionListState extends State<SubmissionList> {
       _hasPhoneNumber = false;
       _hasLocation = false;
       _hasTitle = false;
-      _currentPage = 0;
+      _cursor = null;
+      _hasMore = true;
       _submissions.clear();
       _error = null;
     });
@@ -321,6 +360,26 @@ class _SubmissionListState extends State<SubmissionList> {
                 ),
               ),
             ),
+          if (!_loading && _submissions.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xs,
+                AppSpacing.lg,
+                0,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Showing ${_submissions.length} submission${_submissions.length == 1 ? '' : 's'}',
+                  style: context.mono(
+                    fontSize: 11,
+                    color: context.colors.textTertiary,
+                  ),
+                ),
+              ),
+            ),
+          ],
           Expanded(
             child: _loading
                 ? const LoadingView()
@@ -332,7 +391,6 @@ class _SubmissionListState extends State<SubmissionList> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildPagination(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _navigateToSubmit,
         icon: const Icon(Icons.add),
@@ -374,72 +432,6 @@ class _SubmissionListState extends State<SubmissionList> {
     return chips;
   }
 
-  Widget? _buildPagination() {
-    if (_totalPages <= 1) return null;
-    final c = context.colors;
-
-    var start = _currentPage - 2;
-    if (start < 0) start = 0;
-    var end = start + 4;
-    if (end > _totalPages - 1) {
-      end = _totalPages - 1;
-      start = end - 4;
-      if (start < 0) start = 0;
-    }
-
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: c.surface,
-          border: Border(top: BorderSide(color: c.outline)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              tooltip: 'Previous page',
-              onPressed: (_currentPage > 0 && !_loading)
-                  ? () => _goToPage(_currentPage - 1)
-                  : null,
-            ),
-            for (var i = start; i <= end; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(40, 40),
-                      backgroundColor:
-                          i == _currentPage ? c.primary : Colors.transparent,
-                      foregroundColor:
-                          i == _currentPage ? c.onPrimary : c.textSecondary,
-                    ),
-                    onPressed: _loading ? null : () => _goToPage(i),
-                    child: Text('${i + 1}'),
-                  ),
-                ),
-              ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              tooltip: 'Next page',
-              onPressed: (_currentPage < _totalPages - 1 && !_loading)
-                  ? () => _goToPage(_currentPage + 1)
-                  : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildError() {
     return Center(
       child: Padding(
@@ -465,7 +457,7 @@ class _SubmissionListState extends State<SubmissionList> {
       message: _hasFilters ? 'No matching submissions' : 'No submissions yet',
       detail: _hasFilters
           ? 'Try adjusting or clearing your filters.'
-          : 'Tap “New Submission” to create your first one.',
+          : 'Tap "New Submission" to create your first one.',
     );
   }
 
@@ -473,69 +465,111 @@ class _SubmissionListState extends State<SubmissionList> {
     final c = context.colors;
     return RefreshIndicator(
       onRefresh: _reload,
-      child: ListView.separated(
-        padding: const EdgeInsets.only(bottom: 88),
-        itemCount: _submissions.length,
-        separatorBuilder: (_, __) => Divider(height: 1, color: c.outline),
+      child: ListView.builder(
+        controller: _scrollCtrl,
+        itemCount: _submissions.length + 1,
         itemBuilder: (context, index) {
+          if (index == _submissions.length) {
+            return _buildFooter();
+          }
+
           final s = _submissions[index];
           final hasTitle = s.what?.isNotEmpty == true;
-          return InkWell(
-            onTap: () => _navigateToDetail(s.id),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          hasTitle ? s.what! : 'Untitled submission',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: hasTitle
-                                        ? c.textPrimary
-                                        : c.textTertiary,
-                                    fontStyle: hasTitle
-                                        ? FontStyle.normal
-                                        : FontStyle.italic,
-                                  ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          formatDate(s.createdAt),
-                          style: context.mono(
-                            fontSize: 11,
-                            color: c.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
+          return Column(
+            children: [
+              if (index > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
                   ),
-                  if (s.mediaCount > 0) ...[
-                    Icon(Icons.attach_file,
-                        size: AppIconSize.sm, color: c.textTertiary),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text('${s.mediaCount}',
-                        style: context.mono(
-                            fontSize: 12, color: c.textTertiary)),
-                    AppSpacing.gapHMd,
-                  ],
-                  Icon(Icons.chevron_right,
-                      size: AppIconSize.md, color: c.textTertiary),
-                ],
+                  child: Divider(height: 1, color: c.outline),
+                ),
+              InkWell(
+                onTap: () => _navigateToDetail(s.id),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              hasTitle ? s.what! : 'Untitled submission',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style:
+                                  Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        color: hasTitle
+                                            ? c.textPrimary
+                                            : c.textTertiary,
+                                        fontStyle: hasTitle
+                                            ? FontStyle.normal
+                                            : FontStyle.italic,
+                                      ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              formatDate(s.createdAt),
+                              style: context.mono(
+                                fontSize: 11,
+                                color: c.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (s.mediaCount > 0) ...[
+                        Icon(Icons.attach_file,
+                            size: AppIconSize.sm, color: c.textTertiary),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text('${s.mediaCount}',
+                            style: context.mono(
+                                fontSize: 12, color: c.textTertiary)),
+                        AppSpacing.gapHMd,
+                      ],
+                      Icon(Icons.chevron_right,
+                          size: AppIconSize.md, color: c.textTertiary),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
     );
+  }
+
+  Widget _buildFooter() {
+    if (_loadingMore) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: SizedBox(
+            height: AppIconSize.md,
+            width: AppIconSize.md,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (!_hasMore && _submissions.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Text(
+          'You\'ve seen all ${_submissions.length} submission${_submissions.length == 1 ? '' : 's'}',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }

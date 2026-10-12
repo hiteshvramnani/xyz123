@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { success } from '../../utils/response';
 import { AppError } from '../../middleware/error-handler';
 import { asyncHandler } from '../../utils/async-handler';
+import { parsePaginationQuery } from '../../utils/pagination';
 import { submitEvidence, finalizeEvidence, listMySubmissions, addToSubmission, updateSubmissionTitle } from './evidence.service';
 import { SubmitEvidenceInput, EvidenceFileInput } from './evidence.schemas';
 
@@ -39,16 +40,15 @@ export const handleMySubmissions = asyncHandler(async (req: Request, res: Respon
   if (!browserId) {
     throw new AppError(400, 'VALIDATION_ERROR', 'browserId required');
   }
+  const { cursor, limit } = parsePaginationQuery(req);
   const q = req.query.q as string;
   const hasImage = req.query.hasImage === 'true';
   const hasVideo = req.query.hasVideo === 'true';
   const hasPhoneNumber = req.query.hasPhoneNumber === 'true';
   const hasLocation = req.query.hasLocation === 'true';
   const hasTitle = req.query.hasTitle === 'true';
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  console.log('[listMySubmissions] filters:', { hasImage, hasVideo, hasPhoneNumber, hasLocation, hasTitle, q, page, limit });
-  const result = await listMySubmissions(browserId, { q, hasImage, hasVideo, hasPhoneNumber, hasLocation, hasTitle, page, limit });
+  console.log('[listMySubmissions] filters:', { hasImage, hasVideo, hasPhoneNumber, hasLocation, hasTitle, q, cursor, limit });
+  const result = await listMySubmissions(browserId, { q, hasImage, hasVideo, hasPhoneNumber, hasLocation, hasTitle, cursor, limit });
   return success(res, result.data, result.pagination);
 });
 
